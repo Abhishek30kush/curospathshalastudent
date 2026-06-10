@@ -169,8 +169,8 @@ export default function ClassMaterials() {
                         className="quick-icon-wrapper" 
                         style={{ 
                           margin: 0, 
-                          backgroundColor: material.type === 'video' ? '#fee2e2' : '#e0e7ff', 
-                          color: material.type === 'video' ? '#ef4444' : '#4f46e5' 
+                          backgroundColor: material.type === 'video' ? 'var(--danger-light)' : 'var(--primary-light)', 
+                          color: material.type === 'video' ? 'var(--danger)' : 'var(--primary)' 
                         }}
                       >
                         <span>{material.type === 'video' ? '▶' : '📝'}</span>
@@ -181,12 +181,12 @@ export default function ClassMaterials() {
                             {material.title}
                             </h3>
                             {material.lectureName && (
-                                <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                <span style={{ fontSize: '10px', background: 'var(--bg-main)', color: 'var(--text-muted)', border: '1px solid var(--border-light)', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
                                     {material.lectureName}
                                 </span>
                             )}
                             {material.materialType && (
-                                <span style={{ fontSize: '10px', background: '#334155', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                <span style={{ fontSize: '10px', background: 'var(--bg-sidebar)', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
                                     {material.materialType}
                                 </span>
                             )}

@@ -406,7 +406,7 @@ export default function MockTest() {
                   </div>
 
                   <div className="q-badge-bar">
-                    <span className="q-badge" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>{q.subject || 'Physics'}</span>
+                    <span className="q-badge" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>{q.subject || 'Physics'}</span>
                     <span className={`q-badge ${q.difficulty === 'Easy' ? 'badge-neet' : q.difficulty === 'Hard' ? 'badge-board' : 'badge-jee'}`}>
                       {q.difficulty || 'Medium'}
                     </span>
@@ -423,7 +423,7 @@ export default function MockTest() {
                       const isCorrectOpt = q.correctOption === opt;
                       const isUserOpt = userAns === opt;
                       let optionBorder = 'var(--border-light)';
-                      let optionBg = '#f8fafc';
+                      let optionBg = 'var(--bg-main)';
                       if (isCorrectOpt) {
                         optionBorder = 'var(--success)';
                         optionBg = 'var(--success-light)';
@@ -441,7 +441,7 @@ export default function MockTest() {
                           <div 
                             className="option-radio-box"
                             style={{ 
-                              backgroundColor: isCorrectOpt ? 'var(--success)' : isUserOpt ? 'var(--danger)' : '#e2e8f0',
+                              backgroundColor: isCorrectOpt ? 'var(--success)' : isUserOpt ? 'var(--danger)' : 'var(--border-light)',
                               color: '#ffffff'
                             }}
                           >
@@ -614,7 +614,7 @@ export default function MockTest() {
           </div>
 
           <div className="q-badge-bar">
-            <span className="q-badge" style={{ backgroundColor: '#f3e8ff', color: '#7e22ce' }}>{currentQ.subject || 'Physics'}</span>
+            <span className="q-badge" style={{ backgroundColor: 'var(--primary-light)', color: 'var(--primary)' }}>{currentQ.subject || 'Physics'}</span>
             <span className={`q-badge ${currentQ.difficulty === 'Easy' ? 'badge-neet' : currentQ.difficulty === 'Hard' ? 'badge-board' : 'badge-jee'}`}>
               {currentQ.difficulty || 'Medium'}
             </span>

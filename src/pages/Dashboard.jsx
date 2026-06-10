@@ -142,27 +142,27 @@ export default function Dashboard() {
   const getCourseStyle = (title) => {
     const titleLower = (title || '').toLowerCase();
     if (titleLower.includes('physics')) {
-      return { bg: '#e0f2fe', text: '#0369a1', emoji: '⚛️', color: '#0ea5e9' };
+      return { bg: 'var(--course-physics-bg)', text: 'var(--course-physics-text)', emoji: '⚛️', color: '#0ea5e9' };
     } else if (titleLower.includes('chemistry')) {
-      return { bg: '#fef3c7', text: '#b45309', emoji: '🧪', color: '#f59e0b' };
+      return { bg: 'var(--course-chemistry-bg)', text: 'var(--course-chemistry-text)', emoji: '🧪', color: '#f59e0b' };
     } else if (titleLower.includes('math') || titleLower.includes('calculus') || titleLower.includes('algebra')) {
-      return { bg: '#e0e7ff', text: '#4338ca', emoji: '📐', color: '#6366f1' };
+      return { bg: 'var(--course-math-bg)', text: 'var(--course-math-text)', emoji: '📐', color: '#6366f1' };
     } else if (titleLower.includes('biology') || titleLower.includes('botany') || titleLower.includes('zoology')) {
-      return { bg: '#d1fae5', text: '#047857', emoji: '🧬', color: '#10b981' };
+      return { bg: 'var(--course-biology-bg)', text: 'var(--course-biology-text)', emoji: '🧬', color: '#10b981' };
     } else if (titleLower.includes('english')) {
-      return { bg: '#fae8ff', text: '#86198f', emoji: '📖', color: '#d946ef' };
+      return { bg: 'var(--course-english-bg)', text: 'var(--course-english-text)', emoji: '📖', color: '#d946ef' };
     } else if (titleLower.includes('history') || titleLower.includes('civics') || titleLower.includes('social') || titleLower.includes('geography')) {
-      return { bg: '#ffedd5', text: '#c2410c', emoji: '🌍', color: '#f97316' };
+      return { bg: 'var(--course-history-bg)', text: 'var(--course-history-text)', emoji: '🌍', color: '#f97316' };
     }
-    return { bg: '#f1f5f9', text: '#475569', emoji: '📘', color: '#64748b' };
+    return { bg: 'var(--course-default-bg)', text: 'var(--course-default-text)', emoji: '📘', color: '#64748b' };
   };
 
   const quickActions = [
-    { label: 'Study Material', icon: '📚', path: '/study-materials', bg: '#eef2ff', text: '#4f46e5' },
-    { label: 'Test History', icon: '📊', path: '/history', bg: '#ecfdf5', text: '#059669' },
-    { label: 'Leaderboard', icon: '🏆', path: '/leaderboard', bg: '#fffbeb', text: '#d97706' },
-    { label: 'Bookmarks', icon: '🔖', path: '/bookmarks', bg: '#fff1f2', text: '#e11d48' },
-    { label: 'Profile', icon: '👤', path: '/profile', bg: '#faf5ff', text: '#7c3aed' },
+    { label: 'Study Material', icon: '📚', path: '/study-materials', bg: 'var(--qa-study-bg)', text: 'var(--qa-study-text)' },
+    { label: 'Test History', icon: '📊', path: '/history', bg: 'var(--qa-history-bg)', text: 'var(--qa-history-text)' },
+    { label: 'Leaderboard', icon: '🏆', path: '/leaderboard', bg: 'var(--qa-leaderboard-bg)', text: 'var(--qa-leaderboard-text)' },
+    { label: 'Bookmarks', icon: '🔖', path: '/bookmarks', bg: 'var(--qa-bookmarks-bg)', text: 'var(--qa-bookmarks-text)' },
+    { label: 'Profile', icon: '👤', path: '/profile', bg: 'var(--qa-profile-bg)', text: 'var(--qa-profile-text)' },
   ];
 
   if (loading) {

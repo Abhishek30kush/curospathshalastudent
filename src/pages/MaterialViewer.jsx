@@ -67,7 +67,7 @@ export default function MaterialViewer() {
   return (
     <div style={{ userSelect: 'none', WebkitUserSelect: 'none', msUserSelect: 'none', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
       {/* Secure Toolbar Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '16px 20px', borderBottom: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-card)', padding: '16px 20px', borderBottom: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', marginBottom: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button 
             onClick={() => navigate(-1)} 
@@ -88,7 +88,7 @@ export default function MaterialViewer() {
       </div>
 
       {/* Frame Viewer or Text Viewer */}
-      <div style={{ flex: 1, backgroundColor: isText ? '#ffffff' : '#f8fafc', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1.5px solid var(--border-light)', position: 'relative' }}>
+      <div style={{ flex: 1, backgroundColor: isText ? 'var(--bg-card)' : 'var(--bg-main)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1.5px solid var(--border-light)', position: 'relative' }}>
         {isText ? (
           <div style={{ padding: '24px', width: '100%', height: '100%', overflowY: 'auto', whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: 'var(--text-main)', fontSize: '15px', lineHeight: '1.6' }}>
             {textContent || 'No content provided.'}

@@ -169,7 +169,7 @@ export default function Leaderboard() {
                     width: '38px', 
                     height: '38px', 
                     borderRadius: 'var(--radius-sm)', 
-                    backgroundColor: isCurrentUser ? 'var(--primary)' : '#e2e8f0', 
+                    backgroundColor: isCurrentUser ? 'var(--primary)' : 'var(--border-light)', 
                     color: isCurrentUser ? '#ffffff' : 'var(--text-main)',
                     display: 'flex', 
                     alignItems: 'center', 

@@ -268,7 +268,7 @@ export default function TestHistory() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ flex: 1, height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ flex: 1, height: '8px', backgroundColor: 'var(--bg-main)', borderRadius: '4px', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, backgroundColor: scoreColor }} />
                   </div>
                   <span style={{ fontSize: '13px', fontWeight: '700', color: scoreColor, minWidth: '90px', textAlign: 'right' }}>

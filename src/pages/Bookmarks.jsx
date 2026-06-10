@@ -137,14 +137,14 @@ export default function Bookmarks() {
                         className="test-option-btn" 
                         style={{ 
                           borderColor: isCorrectOpt ? 'var(--success)' : 'var(--border-light)',
-                          backgroundColor: isCorrectOpt ? 'var(--success-light)' : '#f8fafc',
+                          backgroundColor: isCorrectOpt ? 'var(--success-light)' : 'var(--bg-main)',
                           cursor: 'default'
                         }}
                       >
                         <div 
                           className="option-radio-box"
                           style={{ 
-                            backgroundColor: isCorrectOpt ? 'var(--success)' : '#e2e8f0',
+                            backgroundColor: isCorrectOpt ? 'var(--success)' : 'var(--border-light)',
                             color: isCorrectOpt ? '#ffffff' : 'var(--text-muted)'
                           }}
                         >
