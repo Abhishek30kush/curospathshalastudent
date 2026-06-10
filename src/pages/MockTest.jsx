@@ -10,6 +10,7 @@ export default function MockTest() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
+  const [startTime, setStartTime] = useState(null);
 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -55,6 +56,7 @@ export default function MockTest() {
         const qSnap = await getDocs(q);
         const qData = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setQuestions(qData);
+        setStartTime(Date.now());
 
         // Fetch bookmarks
         if (userId) {
@@ -135,7 +137,7 @@ export default function MockTest() {
 
       const userBestScores = {};
       const currentUid = auth.currentUser?.uid;
-      userBestScores[currentUid] = { userId: currentUid, score: currentScore, submittedAt: new Date().toISOString() };
+      userBestScores[currentUid] = { userId: currentUid, score: currentScore, submittedAt: new Date().toISOString(), timeTakenSeconds: 0 };
 
       submissions.forEach(sub => {
         const uid = sub.userId;
@@ -163,7 +165,12 @@ export default function MockTest() {
         }
       }
 
-      resolvedList.sort((a, b) => b.score - a.score);
+      resolvedList.sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+        return (a.timeTakenSeconds || Infinity) - (b.timeTakenSeconds || Infinity);
+      });
 
       const myIndex = resolvedList.findIndex(sub => sub.userId === currentUid);
       const myRank = myIndex !== -1 ? myIndex + 1 : 1;
@@ -179,6 +186,8 @@ export default function MockTest() {
 
   const handleSubmit = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
+
+    const timeTakenSeconds = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
 
     let calculatedScore = 0;
     questions.forEach(q => {
@@ -198,6 +207,7 @@ export default function MockTest() {
         score: calculatedScore,
         maxScore: questions.length * 4,
         answers: answers,
+        timeTakenSeconds: timeTakenSeconds,
         submittedAt: new Date().toISOString()
       });
       calculateAndFetchRankings(calculatedScore);
