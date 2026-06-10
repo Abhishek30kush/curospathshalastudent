@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc, query, where } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 export default function Dashboard() {
@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [userName, setUserName] = useState('');
   const [targetExam, setTargetExam] = useState('IIT-JEE');
   const [purchasedCourses, setPurchasedCourses] = useState([]);
+  const [userAttempts, setUserAttempts] = useState({});
 
   const userId = auth.currentUser?.uid;
   const userEmail = auth.currentUser?.email;
@@ -59,6 +60,19 @@ export default function Dashboard() {
       setCourses(coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setTestSeries(seriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setNotifCount(notifSnap.size);
+
+      // Fetch user test attempts
+      if (userId) {
+        const attemptsSnap = await getDocs(
+          query(collection(db, "userTests"), where("userId", "==", userId))
+        );
+        const attemptsMap = {};
+        attemptsSnap.docs.forEach(doc => {
+          const data = doc.data();
+          attemptsMap[data.testSeriesId] = data;
+        });
+        setUserAttempts(attemptsMap);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
@@ -261,27 +275,32 @@ export default function Dashboard() {
           <span className="section-count">{filteredTestSeries.length} active</span>
         </div>
         <div className="test-list-grid">
-          {filteredTestSeries.map(series => (
-            <div 
-              key={series.id} 
-              className="test-row-card"
-              onClick={() => navigate(`/test/${series.id}`)}
-            >
-              <div className="test-row-header">
-                <span className={`test-category-badge ${(series.category === 'NEET') ? 'badge-neet' : 'badge-jee'}`}>
-                  {series.category === 'JEE' ? 'IIT-JEE' : series.category}
-                </span>
-                <span className="test-action-trigger">Start &rarr;</span>
+          {filteredTestSeries.map(series => {
+            const attempt = userAttempts[series.id];
+            return (
+              <div 
+                key={series.id} 
+                className="test-row-card"
+                onClick={() => navigate(`/test/${series.id}`)}
+              >
+                <div className="test-row-header">
+                  <span className={`test-category-badge ${(series.category === 'NEET') ? 'badge-neet' : 'badge-jee'}`}>
+                    {series.category === 'JEE' ? 'IIT-JEE' : series.category}
+                  </span>
+                  <span className="test-action-trigger" style={attempt ? { color: 'var(--success)' } : {}}>
+                    {attempt ? `Attempted (${attempt.score} pts) ↗` : 'Start →'}
+                  </span>
+                </div>
+                <h3 className="test-row-title">{series.title}</h3>
+                {series.description && <p className="test-row-desc">{series.description}</p>}
+                
+                <div className="test-row-footer">
+                  <span className="test-footer-detail">⏱️ 180 Mins</span>
+                  <span className="test-footer-detail">❓ MCQ Pattern</span>
+                </div>
               </div>
-              <h3 className="test-row-title">{series.title}</h3>
-              {series.description && <p className="test-row-desc">{series.description}</p>}
-              
-              <div className="test-row-footer">
-                <span className="test-footer-detail">⏱️ 180 Mins</span>
-                <span className="test-footer-detail">❓ MCQ Pattern</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
           {filteredTestSeries.length === 0 && (
             <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', padding: '10px' }}>
               No test series available for your stream yet.

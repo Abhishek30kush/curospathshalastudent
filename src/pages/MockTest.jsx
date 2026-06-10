@@ -53,6 +53,23 @@ export default function MockTest() {
           const bmIds = new Set(bmSnap.docs.map(d => d.id));
           setBookmarkedIds(bmIds);
         }
+
+        // Check for existing attempt
+        if (userId) {
+          const attemptQuery = query(
+            collection(db, "userTests"),
+            where("userId", "==", userId),
+            where("testSeriesId", "==", seriesId)
+          );
+          const attemptSnap = await getDocs(attemptQuery);
+          if (!attemptSnap.empty) {
+            const attemptDoc = attemptSnap.docs[0].data();
+            setAnswers(attemptDoc.answers || {});
+            setScore(attemptDoc.score || 0);
+            setIsSubmitted(true);
+            calculateAndFetchRankings(attemptDoc.score || 0);
+          }
+        }
       } catch (error) {
         console.error("Error fetching mock test data", error);
       } finally {
@@ -171,6 +188,7 @@ export default function MockTest() {
         testSeriesId: seriesId,
         score: calculatedScore,
         maxScore: questions.length * 4,
+        answers: answers,
         submittedAt: new Date().toISOString()
       });
       calculateAndFetchRankings(calculatedScore);

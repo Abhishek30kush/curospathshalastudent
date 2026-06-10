@@ -200,7 +200,7 @@ export default function TestHistory() {
                 key={test.id} 
                 className="test-row-card"
                 style={{ cursor: 'pointer' }}
-                onClick={() => handleViewLeaderboard(test.testSeriesId, test.seriesName, test.score)}
+                onClick={() => navigate(`/test/${test.testSeriesId}`)}
               >
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '14px', gap: '12px' }}>
                   <div style={{ 
@@ -246,7 +246,7 @@ export default function TestHistory() {
 
                 <div className="card-footer" style={{ borderTop: '1px solid var(--border-light)', marginTop: '12px', paddingTop: '8px', textAlign: 'center' }}>
                   <span className="leaderboard-text" style={{ fontSize: '12px', color: 'var(--primary)', fontWeight: '700' }}>
-                    🏆 Tap to View Test Leaderboard
+                    📖 Tap to View Solutions & Leaderboard ↗
                   </span>
                 </div>
               </div>
