@@ -21,8 +21,9 @@ export default function MockTest() {
   const [rankingLoading, setRankingLoading] = useState(false);
   const [showRankModal, setShowRankModal] = useState(false);
 
-  // Timer
-  const [timeLeft, setTimeLeft] = useState(0);
+  // Timer — isTimed: admin-defined; null means no timer
+  const [isTimed, setIsTimed] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null);
   const timerRef = useRef(null);
 
   // Bookmarks
@@ -36,7 +37,17 @@ export default function MockTest() {
         const seriesSnap = await getDocs(query(collection(db, "testSeries")));
         const curSeries = seriesSnap.docs.find(d => d.id === seriesId);
         if (curSeries) {
-          setTitle(curSeries.data().title);
+          const seriesData = curSeries.data();
+          setTitle(seriesData.title);
+          // Read admin-defined timer config
+          const timedEnabled = seriesData.isTimed === true;
+          const adminDuration = seriesData.duration; // in minutes
+          setIsTimed(timedEnabled);
+          if (timedEnabled && adminDuration) {
+            setTimeLeft(Number(adminDuration) * 60); // convert to seconds
+          } else {
+            setTimeLeft(null); // no timer
+          }
         }
 
         // Fetch questions
@@ -44,8 +55,6 @@ export default function MockTest() {
         const qSnap = await getDocs(q);
         const qData = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setQuestions(qData);
-        // 2 minutes per question
-        setTimeLeft(qData.length * 120);
 
         // Fetch bookmarks
         if (userId) {
@@ -83,9 +92,9 @@ export default function MockTest() {
     };
   }, [seriesId, userId]);
 
-  // Start timer
+  // Start timer only for admin-timed tests
   useEffect(() => {
-    if (questions.length > 0 && !isSubmitted && timeLeft > 0) {
+    if (isTimed && timeLeft !== null && questions.length > 0 && !isSubmitted && timeLeft > 0) {
       timerRef.current = setInterval(() => {
         setTimeLeft(prev => {
           if (prev <= 1) {
@@ -98,7 +107,7 @@ export default function MockTest() {
       }, 1000);
       return () => clearInterval(timerRef.current);
     }
-  }, [questions.length, isSubmitted]);
+  }, [isTimed, timeLeft !== null, questions.length, isSubmitted]);
 
   const formatTime = (secs) => {
     const m = Math.floor(secs / 60);
@@ -461,9 +470,15 @@ export default function MockTest() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 className="section-title" style={{ maxWidth: '70%', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{title}</h1>
-        <div style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', backgroundColor: `${getTimerColor()}15`, border: `1px solid ${getTimerColor()}` }}>
-          <span style={{ fontSize: '15px', fontWeight: '900', color: getTimerColor() }}>⏱️ {formatTime(timeLeft)}</span>
-        </div>
+        {isTimed && timeLeft !== null ? (
+          <div style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', backgroundColor: `${getTimerColor()}15`, border: `1px solid ${getTimerColor()}` }}>
+            <span style={{ fontSize: '15px', fontWeight: '900', color: getTimerColor() }}>⏱️ {formatTime(timeLeft)}</span>
+          </div>
+        ) : (
+          <div style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--primary-light)', border: '1px solid var(--border-focus)' }}>
+            <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--primary)' }}>📝 Practice Mode</span>
+          </div>
+        )}
       </div>
 
       <div style={{ width: '100%', height: '4px', backgroundColor: 'var(--border-light)', borderRadius: '2px', marginBottom: '10px' }}>
