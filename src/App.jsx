@@ -65,14 +65,14 @@ const MobileNav = () => {
       <NavLink to="/" end className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
         <span className="mobile-nav-icon">🏠</span> Home
       </NavLink>
+      <NavLink to="/study-materials" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
+        <span className="mobile-nav-icon">📚</span> Study
+      </NavLink>
       <NavLink to="/history" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
         <span className="mobile-nav-icon">📊</span> History
       </NavLink>
       <NavLink to="/ai-mentor" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
         <span className="mobile-nav-icon">🤖</span> AI
-      </NavLink>
-      <NavLink to="/leaderboard" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
-        <span className="mobile-nav-icon">🏆</span> Rank
       </NavLink>
       <NavLink to="/profile" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
         <span className="mobile-nav-icon">👤</span> Profile

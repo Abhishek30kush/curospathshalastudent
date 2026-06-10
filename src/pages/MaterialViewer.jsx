@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 export default function MaterialViewer() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { url, title, type, materialType } = location.state || {};
+  const { url, title, type, materialType, textContent } = location.state || {};
 
   // Protect page content from right-click, selection, copy/paste, and dragging
   useEffect(() => {
@@ -32,16 +32,18 @@ export default function MaterialViewer() {
     };
   }, []);
 
-  if (!url) {
+  if (!url && type !== 'text') {
     return (
       <div className="center-indicator">
-        <p style={{ color: 'var(--danger)', fontWeight: 'bold' }}>No valid link found for this resource.</p>
+        <p style={{ color: 'var(--danger)', fontWeight: 'bold' }}>No valid link or content found for this resource.</p>
         <button onClick={() => navigate(-1)} className="auth-btn" style={{ maxWidth: '150px', marginTop: '20px' }}>
           Go Back
         </button>
       </div>
     );
   }
+
+  const isText = type === 'text';
 
   const getYouTubeEmbedUrl = (link) => {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -57,7 +59,7 @@ export default function MaterialViewer() {
 
   if (isVideo) {
     targetUrl = getYouTubeEmbedUrl(url);
-  } else {
+  } else if (!isText) {
     // PDF Google Docs viewer wrapper to prevent direct download on web
     targetUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
   }
@@ -76,7 +78,7 @@ export default function MaterialViewer() {
           <div>
             <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>{title || 'Study Resource'}</h2>
             <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '2px' }}>
-              🔒 Protected View • {isVideo ? 'Secure Video Player' : 'Secure Document Reader'}
+              🔒 Protected View • {isVideo ? 'Secure Video Player' : isText ? 'Direct Note Reader' : 'Secure Document Reader'}
             </p>
           </div>
         </div>
@@ -85,16 +87,22 @@ export default function MaterialViewer() {
         </div>
       </div>
 
-      {/* Frame Viewer */}
-      <div style={{ flex: 1, backgroundColor: '#f8fafc', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1.5px solid var(--border-light)', position: 'relative' }}>
-        <iframe
-          src={targetUrl}
-          className="viewer-frame"
-          style={{ width: '100%', height: '100%', border: 'none' }}
-          title={title}
-          allowFullScreen
-          allow="autoplay"
-        />
+      {/* Frame Viewer or Text Viewer */}
+      <div style={{ flex: 1, backgroundColor: isText ? '#ffffff' : '#f8fafc', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1.5px solid var(--border-light)', position: 'relative' }}>
+        {isText ? (
+          <div style={{ padding: '24px', width: '100%', height: '100%', overflowY: 'auto', whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: 'var(--text-main)', fontSize: '15px', lineHeight: '1.6' }}>
+            {textContent || 'No content provided.'}
+          </div>
+        ) : (
+          <iframe
+            src={targetUrl}
+            className="viewer-frame"
+            style={{ width: '100%', height: '100%', border: 'none' }}
+            title={title}
+            allowFullScreen
+            allow="autoplay"
+          />
+        )}
       </div>
     </div>
   );

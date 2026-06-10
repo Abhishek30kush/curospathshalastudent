@@ -53,6 +53,7 @@ export default function Materials() {
       state: {
         url: material.url,
         title: material.title,
+        textContent: material.textContent,
         type: material.type,
         materialType: material.materialType
       }
@@ -127,9 +128,16 @@ export default function Materials() {
                         <span>{material.type === 'video' ? '▶' : '📄'}</span>
                       </div>
                       <div style={{ flex: 1 }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '4px' }}>
-                          {material.title}
-                        </h3>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', margin: 0 }}>
+                            {material.title}
+                          </h3>
+                          {material.lectureName && (
+                              <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                  {material.lectureName}
+                              </span>
+                          )}
+                        </div>
                         {material.description && (
                           <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                             {material.description}

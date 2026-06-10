@@ -80,7 +80,7 @@ export default function ClassMaterials() {
     if (material.type === 'video') {
       window.open(material.url, '_blank');
     } else {
-      navigate('/view-material', { state: { url: material.url, title: material.title } });
+      navigate('/view-material', { state: { url: material.url, title: material.title, textContent: material.textContent, type: material.type } });
     }
   };
 
@@ -180,6 +180,11 @@ export default function ClassMaterials() {
                             <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', margin: 0 }}>
                             {material.title}
                             </h3>
+                            {material.lectureName && (
+                                <span style={{ fontSize: '10px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                                    {material.lectureName}
+                                </span>
+                            )}
                             {material.materialType && (
                                 <span style={{ fontSize: '10px', background: '#334155', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
                                     {material.materialType}
