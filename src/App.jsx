@@ -15,6 +15,7 @@ import Bookmarks from './pages/Bookmarks';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import AiMentor from './pages/AiMentor';
+import ClassMaterials from './pages/ClassMaterials';
 
 const Sidebar = () => {
   const handleLogout = () => {
@@ -29,6 +30,9 @@ const Sidebar = () => {
       <nav className="sidebar-nav">
         <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">🏠</span> Dashboard
+        </NavLink>
+        <NavLink to="/study-materials" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <span className="nav-link-icon">📚</span> Study Material
         </NavLink>
         <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">📊</span> Test History
@@ -131,6 +135,7 @@ function AppContent() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/test/:seriesId" element={<MockTest />} />
           <Route path="/course/:courseId" element={<Materials />} />
+          <Route path="/study-materials" element={<ClassMaterials />} />
           <Route path="/view-material" element={<MaterialViewer />} />
           <Route path="/history" element={<TestHistory />} />
           <Route path="/leaderboard" element={<Leaderboard />} />

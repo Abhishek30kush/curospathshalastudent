@@ -9,6 +9,21 @@ export default function Materials() {
   const [materials, setMaterials] = useState([]);
   const [courseTitle, setCourseTitle] = useState('');
   const [loading, setLoading] = useState(true);
+  const [expandedChapters, setExpandedChapters] = useState({});
+
+  const toggleChapter = (chapter) => {
+    setExpandedChapters(prev => ({ ...prev, [chapter]: !prev[chapter] }));
+  };
+
+  const groupMaterialsByChapter = (materialsList) => {
+    const grouped = {};
+    materialsList.forEach(m => {
+      const ch = m.chapterName || 'General';
+      if (!grouped[ch]) grouped[ch] = [];
+      grouped[ch].push(m);
+    });
+    return grouped;
+  };
 
   useEffect(() => {
     const fetchMaterialsAndCourse = async () => {
@@ -64,40 +79,68 @@ export default function Materials() {
         <h1 className="section-title" style={{ margin: 0 }}>{courseTitle || 'Course Materials'}</h1>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {materials.length === 0 ? (
           <div style={{ color: 'var(--text-muted)', fontStyle: 'italic', padding: '20px', textAlign: 'center' }}>
             No materials found for this course.
           </div>
         ) : (
-          materials.map(material => (
-            <div 
-              key={material.id} 
-              className="standing-row"
-              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px' }}
-              onClick={() => openMaterial(material)}
-            >
-              <div 
-                className="quick-icon-wrapper" 
+          Object.entries(groupMaterialsByChapter(materials)).sort(([a], [b]) => a.localeCompare(b)).map(([chapter, mats]) => (
+            <div key={chapter} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden' }}>
+              <button 
+                onClick={() => toggleChapter(chapter)}
                 style={{ 
-                  margin: 0, 
-                  backgroundColor: material.type === 'video' ? '#fee2e2' : '#e0e7ff', 
-                  color: material.type === 'video' ? '#ef4444' : '#4f46e5' 
+                  width: '100%', 
+                  background: 'var(--card-bg)', 
+                  border: 'none', 
+                  padding: '16px 20px', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  borderBottom: expandedChapters[chapter] ? '1px solid var(--border-color)' : 'none'
                 }}
               >
-                <span>{material.type === 'video' ? '▶' : '📄'}</span>
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '4px' }}>
-                  {material.title}
-                </h3>
-                {material.description && (
-                  <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                    {material.description}
-                  </p>
-                )}
-              </div>
-              <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '13px' }}>View &rarr;</span>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)' }}>{chapter}</h2>
+                <span style={{ fontSize: '18px', color: 'var(--text-muted)', transition: 'transform 0.2s', transform: expandedChapters[chapter] ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  ▼
+                </span>
+              </button>
+              
+              {expandedChapters[chapter] && (
+                <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px', backgroundColor: 'var(--bg-main)' }}>
+                  {mats.map(material => (
+                    <div 
+                      key={material.id} 
+                      className="standing-row"
+                      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
+                      onClick={() => openMaterial(material)}
+                    >
+                      <div 
+                        className="quick-icon-wrapper" 
+                        style={{ 
+                          margin: 0, 
+                          backgroundColor: material.type === 'video' ? '#fee2e2' : '#e0e7ff', 
+                          color: material.type === 'video' ? '#ef4444' : '#4f46e5' 
+                        }}
+                      >
+                        <span>{material.type === 'video' ? '▶' : '📄'}</span>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '4px' }}>
+                          {material.title}
+                        </h3>
+                        {material.description && (
+                          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                            {material.description}
+                          </p>
+                        )}
+                      </div>
+                      <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '13px' }}>View &rarr;</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))
         )}

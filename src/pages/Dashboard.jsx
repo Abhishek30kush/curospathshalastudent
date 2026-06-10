@@ -158,7 +158,7 @@ export default function Dashboard() {
   };
 
   const quickActions = [
-    { label: 'Study Material', icon: '📚', path: '/profile', bg: '#eef2ff', text: '#4f46e5' }, // redirect study to profile to let them filter
+    { label: 'Study Material', icon: '📚', path: '/study-materials', bg: '#eef2ff', text: '#4f46e5' },
     { label: 'Test History', icon: '📊', path: '/history', bg: '#ecfdf5', text: '#059669' },
     { label: 'Leaderboard', icon: '🏆', path: '/leaderboard', bg: '#fffbeb', text: '#d97706' },
     { label: 'Bookmarks', icon: '🔖', path: '/bookmarks', bg: '#fff1f2', text: '#e11d48' },
