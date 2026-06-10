@@ -191,8 +191,9 @@
 
 /* Podium Dark Mode Overrides */
 .dark .podium-silver .podium-avatar {
-  background-color: var(--bg-main);
+  background-color: rgba(148, 163, 184, 0.2);
   border-color: #94a3b8;
+  color: #cbd5e1;
 }
 .dark .podium-silver .podium-pillar {
   background-color: var(--bg-main);
@@ -201,6 +202,7 @@
 .dark .podium-gold .podium-avatar {
   background-color: rgba(251, 191, 36, 0.2);
   border-color: #fbbf24;
+  color: #fbbf24;
 }
 .dark .podium-gold .podium-pillar {
   background-color: rgba(251, 191, 36, 0.25);
@@ -212,6 +214,7 @@
 .dark .podium-bronze .podium-avatar {
   background-color: rgba(249, 115, 22, 0.2);
   border-color: #f97316;
+  color: #fb923c;
 }
 .dark .podium-bronze .podium-pillar {
   background-color: rgba(249, 115, 22, 0.25);
@@ -219,6 +222,18 @@
 }
 .dark .podium-bronze .podium-pts {
   color: #f97316;
+}
+
+/* Standing Avatar Dark Mode Override */
+.dark .standing-avatar {
+  background-color: var(--bg-main);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+}
+.dark .standing-avatar.me {
+  background-color: var(--primary);
+  color: #ffffff;
+  border: none;
 }
 
 /* Global Reset & Base Setup */
@@ -1060,6 +1075,7 @@ a {
 .podium-gold .podium-avatar {
   background-color: #fef3c7;
   border: 3px solid #fbbf24;
+  color: #b45309;
 }
 .podium-gold .podium-pillar {
   height: 100px;
@@ -1073,6 +1089,7 @@ a {
 .podium-silver .podium-avatar {
   background-color: #f1f5f9;
   border: 3px solid #94a3b8;
+  color: #475569;
 }
 .podium-silver .podium-pillar {
   height: 75px;
@@ -1083,6 +1100,7 @@ a {
 .podium-bronze .podium-avatar {
   background-color: #fff7ed;
   border: 3px solid #f97316;
+  color: #c2410c;
 }
 .podium-bronze .podium-pillar {
   height: 55px;
@@ -1202,6 +1220,26 @@ a {
 
 .standing-row-me .standing-score-val {
   color: var(--primary);
+}
+
+.standing-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background-color: var(--border-light);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  margin-right: 16px;
+  font-size: 15px;
+  transition: var(--transition-smooth);
+}
+
+.standing-avatar.me {
+  background-color: var(--primary);
+  color: #ffffff;
 }
 
 /* Loading Panel */

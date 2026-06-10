@@ -165,19 +165,7 @@ export default function Leaderboard() {
                   <div style={{ width: '32px', textAlign: 'center', fontWeight: '800', marginRight: '16px', fontSize: '14px' }}>
                     {idx < 3 ? getMedalEmoji(idx) : `#${idx + 1}`}
                   </div>
-                  <div style={{ 
-                    width: '38px', 
-                    height: '38px', 
-                    borderRadius: 'var(--radius-sm)', 
-                    backgroundColor: isCurrentUser ? 'var(--primary)' : 'var(--border-light)', 
-                    color: isCurrentUser ? '#ffffff' : 'var(--text-main)',
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    fontWeight: '900', 
-                    marginRight: '16px',
-                    fontSize: '15px'
-                  }}>
+                  <div className={`standing-avatar ${isCurrentUser ? 'me' : ''}`}>
                     {leader.name.charAt(0).toUpperCase()}
                   </div>
                   <div style={{ flex: 1 }}>
