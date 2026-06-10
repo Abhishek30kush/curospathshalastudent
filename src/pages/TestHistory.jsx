@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function TestHistory() {
   const navigate = useNavigate();
@@ -143,8 +144,18 @@ export default function TestHistory() {
     ? Math.round(tests.reduce((s, t) => s + ((t.score || 0) / (t.maxScore || 1)) * 100, 0) / totalTests)
     : 0;
 
+  const chartData = [...tests].reverse().map(t => {
+    const pct = t.maxScore > 0 ? Math.round((t.score / t.maxScore) * 100) : 0;
+    return {
+      name: t.seriesName.length > 12 ? t.seriesName.substring(0, 10) + '..' : t.seriesName,
+      percentage: pct,
+      score: t.score,
+      maxScore: t.maxScore
+    };
+  });
+
   return (
-    <div>
+    <div className="dark:text-slate-100">
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '16px' }}>
         <button 
           onClick={() => navigate('/')} 
@@ -154,6 +165,27 @@ export default function TestHistory() {
         </button>
         <h1 className="section-title" style={{ margin: 0 }}>Test History</h1>
       </div>
+
+      {/* Progress Chart */}
+      {totalTests > 0 && (
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm mb-6">
+          <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-4">📈 Progress Analysis</h3>
+          <div style={{ width: '100%', height: 220 }}>
+            <ResponsiveContainer>
+              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" className="dark:stroke-slate-700/50" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} fontWeight="bold" tickLine={false} />
+                <YAxis domain={[0, 100]} stroke="#94a3b8" fontSize={10} fontWeight="bold" tickLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'var(--bg-card)', borderColor: 'var(--border-light)', borderRadius: '12px', fontSize: '12px' }}
+                  labelStyle={{ fontWeight: 'bold', color: 'var(--text-main)' }}
+                />
+                <Line type="monotone" dataKey="percentage" stroke="#6366f1" strokeWidth={3} activeDot={{ r: 6 }} dot={{ strokeWidth: 2, r: 4 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
 
       {/* Stats Summary */}
       {totalTests > 0 && (

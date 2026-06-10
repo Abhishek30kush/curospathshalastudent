@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { HashRouter as Router, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
@@ -16,8 +16,9 @@ import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import AiMentor from './pages/AiMentor';
 import ClassMaterials from './pages/ClassMaterials';
+import Forum from './pages/Forum';
 
-const Sidebar = () => {
+const Sidebar = ({ theme, toggleTheme }) => {
   const handleLogout = () => {
     signOut(auth);
   };
@@ -43,12 +44,22 @@ const Sidebar = () => {
         <NavLink to="/bookmarks" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">🔖</span> Bookmarks
         </NavLink>
+        <NavLink to="/forum" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <span className="nav-link-icon">💬</span> Doubt Forum
+        </NavLink>
         <NavLink to="/ai-mentor" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">🤖</span> AI Mentor
         </NavLink>
         <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">👤</span> Profile
         </NavLink>
+        <button 
+          onClick={toggleTheme} 
+          className="nav-link" 
+          style={{ border: 'none', background: 'none', cursor: 'pointer', marginTop: '10px' }}
+        >
+          <span className="nav-link-icon">{theme === 'dark' ? '☀️' : '🌙'}</span> {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+        </button>
       </nav>
       <div className="sidebar-footer">
         <button onClick={handleLogout} className="logout-btn">
@@ -84,6 +95,20 @@ const MobileNav = () => {
 function AppContent() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -129,7 +154,7 @@ function AppContent() {
 
   return (
     <div className="app-container">
-      <Sidebar />
+      <Sidebar theme={theme} toggleTheme={toggleTheme} />
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -142,6 +167,7 @@ function AppContent() {
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/forum" element={<Forum />} />
           <Route path="/ai-mentor" element={<AiMentor />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

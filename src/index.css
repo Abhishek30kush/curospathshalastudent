@@ -38,6 +38,32 @@
   --font-sans: 'Outfit', 'Inter', system-ui, sans-serif;
 }
 
+.dark {
+  --primary-hue: 243;
+  --primary: hsl(var(--primary-hue), 75%, 65%);
+  --primary-light: hsl(var(--primary-hue), 25%, 15%);
+  --primary-dark: hsl(var(--primary-hue), 75%, 75%);
+  --primary-glow: hsla(var(--primary-hue), 75%, 65%, 0.15);
+  
+  --success: hsl(142, 70%, 45%);
+  --success-light: hsl(142, 60%, 12%);
+  --warning: hsl(38, 90%, 55%);
+  --warning-light: hsl(38, 80%, 13%);
+  --danger: hsl(350, 80%, 65%);
+  --danger-light: hsl(350, 70%, 14%);
+  
+  --bg-main: hsl(222, 47%, 6%);
+  --bg-card: hsl(222, 47%, 10%);
+  --bg-sidebar: hsl(222, 47%, 8%);
+  
+  --text-main: hsl(210, 40%, 98%);
+  --text-muted: hsl(215, 16%, 70%);
+  --text-light: hsl(222, 47%, 15%);
+  
+  --border-light: hsl(222, 47%, 16%);
+  --border-focus: hsl(var(--primary-hue), 75%, 70%);
+}
+
 /* Global Reset & Base Setup */
 * {
   box-sizing: border-box;

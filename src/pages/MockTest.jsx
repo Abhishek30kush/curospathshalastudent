@@ -25,11 +25,18 @@ export default function MockTest() {
   // Timer — isTimed: admin-defined; null means no timer
   const [isTimed, setIsTimed] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
+  const [duration, setDuration] = useState(0); // in minutes
   const timerRef = useRef(null);
 
   // Bookmarks
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
   const userId = auth.currentUser?.uid;
+
+  // Answers ref to prevent closure over stale state in timer submit
+  const answersRef = useRef({});
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
 
   useEffect(() => {
     const fetchTestData = async () => {
@@ -37,18 +44,16 @@ export default function MockTest() {
         // Fetch test series details
         const seriesSnap = await getDocs(query(collection(db, "testSeries")));
         const curSeries = seriesSnap.docs.find(d => d.id === seriesId);
+        let timedEnabled = false;
+        let adminDuration = 0;
         if (curSeries) {
           const seriesData = curSeries.data();
           setTitle(seriesData.title);
           // Read admin-defined timer config
-          const timedEnabled = seriesData.isTimed === true;
-          const adminDuration = seriesData.duration; // in minutes
+          timedEnabled = seriesData.isTimed === true;
+          adminDuration = Number(seriesData.duration || 0); // in minutes
           setIsTimed(timedEnabled);
-          if (timedEnabled && adminDuration) {
-            setTimeLeft(Number(adminDuration) * 60); // convert to seconds
-          } else {
-            setTimeLeft(null); // no timer
-          }
+          setDuration(adminDuration);
         }
 
         // Fetch questions
@@ -56,7 +61,6 @@ export default function MockTest() {
         const qSnap = await getDocs(q);
         const qData = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setQuestions(qData);
-        setStartTime(Date.now());
 
         // Fetch bookmarks
         if (userId) {
@@ -66,6 +70,7 @@ export default function MockTest() {
         }
 
         // Check for existing attempt
+        let alreadySubmitted = false;
         if (userId) {
           const attemptQuery = query(
             collection(db, "userTests"),
@@ -78,8 +83,43 @@ export default function MockTest() {
             setAnswers(attemptDoc.answers || {});
             setScore(attemptDoc.score || 0);
             setIsSubmitted(true);
+            alreadySubmitted = true;
             calculateAndFetchRankings(attemptDoc.score || 0);
           }
+        }
+
+        // Setup timer with local storage persistence to prevent refresh resets
+        if (timedEnabled && adminDuration > 0 && !alreadySubmitted) {
+          const storageKey = `test_start_time_${userId}_${seriesId}`;
+          let savedStart = localStorage.getItem(storageKey);
+          if (!savedStart) {
+            savedStart = Date.now().toString();
+            localStorage.setItem(storageKey, savedStart);
+          }
+          const elapsed = Math.floor((Date.now() - Number(savedStart)) / 1000);
+          const remaining = (adminDuration * 60) - elapsed;
+
+          // Load saved answers if any
+          const ansKey = `test_answers_${userId}_${seriesId}`;
+          const savedAnswers = localStorage.getItem(ansKey);
+          if (savedAnswers) {
+            try {
+              setAnswers(JSON.parse(savedAnswers));
+            } catch (e) {
+              console.error("Error parsing saved answers:", e);
+            }
+          }
+
+          if (remaining <= 0) {
+            setTimeLeft(0);
+            setStartTime(Number(savedStart));
+            handleSubmitForced(qData, Number(savedStart));
+          } else {
+            setTimeLeft(remaining);
+            setStartTime(Number(savedStart));
+          }
+        } else {
+          setStartTime(Date.now());
         }
       } catch (error) {
         console.error("Error fetching mock test data", error);
@@ -94,22 +134,28 @@ export default function MockTest() {
     };
   }, [seriesId, userId]);
 
-  // Start timer only for admin-timed tests
+  // Start timer only for admin-timed tests with drift prevention
   useEffect(() => {
-    if (isTimed && timeLeft !== null && questions.length > 0 && !isSubmitted && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            handleSubmit();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      return () => clearInterval(timerRef.current);
+    if (isTimed && startTime && duration > 0 && questions.length > 0 && !isSubmitted) {
+      const endTime = startTime + (duration * 60 * 1000);
+
+      const updateTimer = () => {
+        const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        setTimeLeft(remaining);
+        if (remaining <= 0) {
+          clearInterval(timerRef.current);
+          handleSubmit();
+        }
+      };
+
+      updateTimer();
+      timerRef.current = setInterval(updateTimer, 1000);
+
+      return () => {
+        if (timerRef.current) clearInterval(timerRef.current);
+      };
     }
-  }, [isTimed, timeLeft !== null, questions.length, isSubmitted]);
+  }, [isTimed, startTime, duration, questions.length, isSubmitted]);
 
   const formatTime = (secs) => {
     const m = Math.floor(secs / 60);
@@ -125,7 +171,13 @@ export default function MockTest() {
 
   const handleSelectOption = (qId, option) => {
     if (isSubmitted) return;
-    setAnswers(prev => ({ ...prev, [qId]: option }));
+    setAnswers(prev => {
+      const updated = { ...prev, [qId]: option };
+      if (userId) {
+        localStorage.setItem(`test_answers_${userId}_${seriesId}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
   };
 
   const calculateAndFetchRankings = async (currentScore) => {
@@ -184,16 +236,62 @@ export default function MockTest() {
     }
   };
 
+  const handleSubmitForced = async (qList, forceStartTime) => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    const timeTakenSeconds = forceStartTime ? Math.floor((Date.now() - forceStartTime) / 1000) : 0;
+    
+    // Load from local storage directly for answers
+    let finalAnswers = {};
+    if (userId) {
+      const savedAnswers = localStorage.getItem(`test_answers_${userId}_${seriesId}`);
+      if (savedAnswers) {
+        try { finalAnswers = JSON.parse(savedAnswers); } catch (e) {}
+      }
+    }
+
+    let calculatedScore = 0;
+    qList.forEach(q => {
+      if (finalAnswers[q.id] === q.correctOption) {
+        calculatedScore += 4;
+      } else if (finalAnswers[q.id]) {
+        calculatedScore -= 1;
+      }
+    });
+    setScore(calculatedScore);
+    setIsSubmitted(true);
+
+    try {
+      await addDoc(collection(db, "userTests"), {
+        userId: auth.currentUser?.uid,
+        testSeriesId: seriesId,
+        score: calculatedScore,
+        maxScore: qList.length * 4,
+        answers: finalAnswers,
+        timeTakenSeconds: timeTakenSeconds,
+        submittedAt: new Date().toISOString()
+      });
+      if (userId) {
+        localStorage.removeItem(`test_start_time_${userId}_${seriesId}`);
+        localStorage.removeItem(`test_answers_${userId}_${seriesId}`);
+      }
+      calculateAndFetchRankings(calculatedScore);
+    } catch (err) {
+      console.error("Error saving score", err);
+      calculateAndFetchRankings(calculatedScore);
+    }
+  };
+
   const handleSubmit = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
 
     const timeTakenSeconds = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+    const currentAnswers = answersRef.current;
 
     let calculatedScore = 0;
     questions.forEach(q => {
-      if (answers[q.id] === q.correctOption) {
+      if (currentAnswers[q.id] === q.correctOption) {
         calculatedScore += 4;
-      } else if (answers[q.id]) {
+      } else if (currentAnswers[q.id]) {
         calculatedScore -= 1;
       }
     });
@@ -206,10 +304,14 @@ export default function MockTest() {
         testSeriesId: seriesId,
         score: calculatedScore,
         maxScore: questions.length * 4,
-        answers: answers,
+        answers: currentAnswers,
         timeTakenSeconds: timeTakenSeconds,
         submittedAt: new Date().toISOString()
       });
+      if (userId) {
+        localStorage.removeItem(`test_start_time_${userId}_${seriesId}`);
+        localStorage.removeItem(`test_answers_${userId}_${seriesId}`);
+      }
       calculateAndFetchRankings(calculatedScore);
     } catch (err) {
       console.error("Error saving score", err);
