@@ -38,7 +38,7 @@ export default function Materials() {
         // Fetch materials
         const q = query(collection(db, "materials"), where("courseId", "==", courseId));
         const qSnap = await getDocs(q);
-        setMaterials(qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        setMaterials(qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(m => m.status !== 'draft'));
       } catch (error) {
         console.error("Error fetching materials", error);
       } finally {

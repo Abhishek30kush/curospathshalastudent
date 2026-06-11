@@ -74,7 +74,7 @@ export default function ClassMaterials() {
     return grouped;
   };
 
-  const filteredMaterials = materials.filter(m => selectedSubject === 'All' || m.subject === selectedSubject);
+  const filteredMaterials = materials.filter(m => (selectedSubject === 'All' || m.subject === selectedSubject) && m.status !== 'draft');
 
   const openMaterial = (material) => {
     if (material.type === 'video') {

@@ -48,6 +48,11 @@ export default function MockTest() {
         let adminDuration = 0;
         if (curSeries) {
           const seriesData = curSeries.data();
+          if (seriesData.status === 'draft') {
+            alert("This test is not available yet.");
+            navigate(-1);
+            return;
+          }
           setTitle(seriesData.title);
           // Read admin-defined timer config
           timedEnabled = seriesData.isTimed === true;

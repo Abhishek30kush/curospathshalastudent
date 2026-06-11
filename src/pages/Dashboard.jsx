@@ -58,7 +58,7 @@ export default function Dashboard() {
       ]);
 
       setCourses(coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setTestSeries(seriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setTestSeries(seriesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(s => s.status !== 'draft'));
       setNotifCount(notifSnap.size);
 
       // Fetch user test attempts
