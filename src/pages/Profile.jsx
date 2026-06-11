@@ -12,6 +12,7 @@ export default function Profile() {
   const [form, setForm] = useState({ firstName: '', lastName: '', dob: '', phone: '', targetExam: 'IIT-JEE' });
   const [saving, setSaving] = useState(false);
   const [testStats, setTestStats] = useState({ total: 0, avgScore: 0, bestScore: 0 });
+  const [subjectAccuracy, setSubjectAccuracy] = useState({});
 
   const userId = auth.currentUser?.uid;
   const userEmail = auth.currentUser?.email;
@@ -64,6 +65,28 @@ export default function Profile() {
             avgScore: Math.round(totalScore / tests.length),
             bestScore: Math.max(...tests.map(t => t.score || 0)),
           });
+
+          // Subject Breakdown Analysis
+          const subjectScores = {};
+          tests.forEach(t => {
+            if (t.subjectBreakdown) {
+              Object.keys(t.subjectBreakdown).forEach(sub => {
+                if (!subjectScores[sub]) {
+                  subjectScores[sub] = { score: 0, max: 0 };
+                }
+                subjectScores[sub].score += t.subjectBreakdown[sub].score || 0;
+                subjectScores[sub].max += t.subjectBreakdown[sub].max || 0;
+              });
+            }
+          });
+
+          const accuracyMap = {};
+          Object.keys(subjectScores).forEach(sub => {
+            const max = subjectScores[sub].max;
+            const score = Math.max(0, subjectScores[sub].score);
+            accuracyMap[sub] = max > 0 ? Math.round((score / max) * 100) : 0;
+          });
+          setSubjectAccuracy(accuracyMap);
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -184,6 +207,29 @@ export default function Profile() {
               <span className="standing-score-val" style={{ fontSize: '18px' }}>{testStats.bestScore} pts</span>
             </div>
           </div>
+
+          {Object.keys(subjectAccuracy).length > 0 && (
+            <div className="test-question-box" style={{ padding: '24px', marginTop: '20px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '16px' }}>📊 Subject Accuracy Analysis</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {Object.keys(subjectAccuracy).map(sub => {
+                  const pct = subjectAccuracy[sub];
+                  const barColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+                  return (
+                    <div key={sub}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', marginBottom: '6px' }}>
+                        <span style={{ color: 'var(--text-main)' }}>{sub}</span>
+                        <span style={{ color: barColor }}>{pct}%</span>
+                      </div>
+                      <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${pct}%`, height: '100%', backgroundColor: barColor, borderRadius: '3px' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <button 
             type="button" 

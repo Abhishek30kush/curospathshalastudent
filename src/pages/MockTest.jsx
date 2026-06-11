@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { evaluateTest, formatTime, getScoreColor } from '../utils/testUtils';
 
 export default function MockTest() {
   const { seriesId } = useParams();
@@ -278,20 +279,7 @@ export default function MockTest() {
       }
     }
 
-    let calculatedScore = 0;
-    let maxScore = 0;
-    qList.forEach(q => {
-      const qMarks = Number(q.marks) !== undefined && !isNaN(Number(q.marks)) ? Number(q.marks) : 4;
-      const rawNeg = q.negativeMarks !== undefined && !isNaN(Number(q.negativeMarks)) ? Number(q.negativeMarks) : -1;
-      const qNegMarks = rawNeg > 0 ? -rawNeg : rawNeg;
-      maxScore += qMarks;
-
-      if (finalAnswers[q.id] === q.correctOption) {
-        calculatedScore += qMarks;
-      } else if (finalAnswers[q.id]) {
-        calculatedScore += qNegMarks;
-      }
-    });
+    const { score: calculatedScore, maxScore, subjectBreakdown } = evaluateTest(qList, finalAnswers);
     setScore(calculatedScore);
     setIsSubmitted(true);
 
@@ -303,6 +291,7 @@ export default function MockTest() {
         testSeriesId: seriesId,
         score: calculatedScore,
         maxScore: maxScore,
+        subjectBreakdown: subjectBreakdown,
         answers: finalAnswers,
         timeTakenSeconds: timeTakenSeconds,
         submittedAt: new Date().toISOString()
@@ -324,20 +313,7 @@ export default function MockTest() {
     const timeTakenSeconds = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
     const currentAnswers = answersRef.current;
 
-    let calculatedScore = 0;
-    let maxScore = 0;
-    questions.forEach(q => {
-      const qMarks = Number(q.marks) !== undefined && !isNaN(Number(q.marks)) ? Number(q.marks) : 4;
-      const rawNeg = q.negativeMarks !== undefined && !isNaN(Number(q.negativeMarks)) ? Number(q.negativeMarks) : -1;
-      const qNegMarks = rawNeg > 0 ? -rawNeg : rawNeg;
-      maxScore += qMarks;
-
-      if (currentAnswers[q.id] === q.correctOption) {
-        calculatedScore += qMarks;
-      } else if (currentAnswers[q.id]) {
-        calculatedScore += qNegMarks;
-      }
-    });
+    const { score: calculatedScore, maxScore, subjectBreakdown } = evaluateTest(questions, currentAnswers);
     setScore(calculatedScore);
     setIsSubmitted(true);
 
@@ -349,6 +325,7 @@ export default function MockTest() {
         testSeriesId: seriesId,
         score: calculatedScore,
         maxScore: maxScore,
+        subjectBreakdown: subjectBreakdown,
         answers: currentAnswers,
         timeTakenSeconds: timeTakenSeconds,
         submittedAt: new Date().toISOString()
@@ -385,9 +362,11 @@ export default function MockTest() {
           return next;
         });
       } else {
+        const folderName = window.prompt("Enter a folder name to categorize this bookmark (e.g. Physics Formulas, Weak Topics) or leave empty for general:", "General") || "General";
         await setDoc(bmRef, {
           questionId,
           testSeriesId: seriesId,
+          folder: folderName.trim(),
           savedAt: new Date().toISOString()
         });
         setBookmarkedIds(prev => new Set(prev).add(questionId));
@@ -463,42 +442,102 @@ export default function MockTest() {
                   <p className="test-q-text" style={{ marginBottom: '16px' }}>{q.text}</p>
                   {q.imageUrl && <img src={q.imageUrl} className="test-image" alt="Question" />}
 
-                  <div className="test-option-list">
-                    {['A', 'B', 'C', 'D'].map(opt => {
-                      const isCorrectOpt = q.correctOption === opt;
-                      const isUserOpt = userAns === opt;
-                      let optionBorder = 'var(--border-light)';
-                      let optionBg = 'var(--bg-main)';
-                      if (isCorrectOpt) {
-                        optionBorder = 'var(--success)';
-                        optionBg = 'var(--success-light)';
-                      } else if (isUserOpt && !isCorrectOpt) {
-                        optionBorder = 'var(--danger)';
-                        optionBg = 'var(--danger-light)';
-                      }
+                  {q.type === 'numerical' ? (
+                    <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div className="standing-row" style={{ padding: '12px 16px', backgroundColor: String(userAns || '').trim().toLowerCase() === String(q.correctAnswer || q.correctOption).trim().toLowerCase() ? 'var(--success-light)' : 'var(--danger-light)', borderColor: String(userAns || '').trim().toLowerCase() === String(q.correctAnswer || q.correctOption).trim().toLowerCase() ? 'var(--success)' : 'var(--danger)', borderWidth: '1px', borderStyle: 'solid', borderRadius: 'var(--radius-md)' }}>
+                        <span style={{ fontWeight: 'bold' }}>Your Answer:</span>
+                        <span>{userAns || '(Skipped)'}</span>
+                      </div>
+                      <div className="standing-row" style={{ padding: '12px 16px', backgroundColor: 'var(--primary-light)', borderColor: 'var(--primary)', borderWidth: '1px', borderStyle: 'solid', borderRadius: 'var(--radius-md)' }}>
+                        <span style={{ fontWeight: 'bold', color: 'var(--primary-dark)' }}>Correct Answer:</span>
+                        <span style={{ fontWeight: 'bold', color: 'var(--primary-dark)' }}>{q.correctAnswer || q.correctOption}</span>
+                      </div>
+                    </div>
+                  ) : q.type === 'multi_correct' ? (
+                    <div className="test-option-list">
+                      {['A', 'B', 'C', 'D'].map(opt => {
+                        const parseOptions = (val) => {
+                          if (!val) return [];
+                          if (Array.isArray(val)) return val.map(v => String(v).toUpperCase());
+                          return String(val).split(',').map(v => String(v).trim().toUpperCase());
+                        };
+                        const userList = parseOptions(userAns);
+                        const correctList = parseOptions(q.correctOption);
 
-                      return (
-                        <div 
-                          key={opt}
-                          className="test-option-btn"
-                          style={{ borderColor: optionBorder, backgroundColor: optionBg, cursor: 'default' }}
-                        >
+                        const isCorrectOpt = correctList.includes(opt);
+                        const isUserOpt = userList.includes(opt);
+
+                        let optionBorder = 'var(--border-light)';
+                        let optionBg = 'var(--bg-main)';
+                        if (isCorrectOpt) {
+                          optionBorder = 'var(--success)';
+                          optionBg = 'var(--success-light)';
+                        } else if (isUserOpt && !isCorrectOpt) {
+                          optionBorder = 'var(--danger)';
+                          optionBg = 'var(--danger-light)';
+                        }
+
+                        return (
                           <div 
-                            className="option-radio-box"
-                            style={{ 
-                              backgroundColor: isCorrectOpt ? 'var(--success)' : isUserOpt ? 'var(--danger)' : 'var(--border-light)',
-                              color: '#ffffff'
-                            }}
+                            key={opt}
+                            className="test-option-btn"
+                            style={{ borderColor: optionBorder, backgroundColor: optionBg, cursor: 'default' }}
                           >
-                            {opt}
+                            <div 
+                              className="option-radio-box"
+                              style={{ 
+                                borderRadius: '4px',
+                                backgroundColor: isCorrectOpt ? 'var(--success)' : isUserOpt ? 'var(--danger)' : 'var(--border-light)',
+                                color: '#ffffff'
+                              }}
+                            >
+                              {opt}
+                            </div>
+                            <span className="option-value-text">{q.options?.[opt]}</span>
+                            {isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--success)', fontWeight: 'bold' }}>✓ Correct</span>}
+                            {isUserOpt && !isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--danger)', fontWeight: 'bold' }}>✗ Incorrect Select</span>}
                           </div>
-                          <span className="option-value-text">{q.options?.[opt]}</span>
-                          {isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--success)', fontWeight: 'bold' }}>✓</span>}
-                          {isUserOpt && !isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--danger)', fontWeight: 'bold' }}>✗</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="test-option-list">
+                      {['A', 'B', 'C', 'D'].map(opt => {
+                        const isCorrectOpt = q.correctOption === opt;
+                        const isUserOpt = userAns === opt;
+                        let optionBorder = 'var(--border-light)';
+                        let optionBg = 'var(--bg-main)';
+                        if (isCorrectOpt) {
+                          optionBorder = 'var(--success)';
+                          optionBg = 'var(--success-light)';
+                        } else if (isUserOpt && !isCorrectOpt) {
+                          optionBorder = 'var(--danger)';
+                          optionBg = 'var(--danger-light)';
+                        }
+
+                        return (
+                          <div 
+                            key={opt}
+                            className="test-option-btn"
+                            style={{ borderColor: optionBorder, backgroundColor: optionBg, cursor: 'default' }}
+                          >
+                            <div 
+                              className="option-radio-box"
+                              style={{ 
+                                backgroundColor: isCorrectOpt ? 'var(--success)' : isUserOpt ? 'var(--danger)' : 'var(--border-light)',
+                                color: '#ffffff'
+                              }}
+                            >
+                              {opt}
+                            </div>
+                            <span className="option-value-text">{q.options?.[opt]}</span>
+                            {isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--success)', fontWeight: 'bold' }}>✓</span>}
+                            {isUserOpt && !isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--danger)', fontWeight: 'bold' }}>✗</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {!!q.solution && (
                     <div style={{ marginTop: '20px', backgroundColor: 'var(--primary-light)', padding: '16px', borderRadius: 'var(--radius-md)', borderLeft: '4px solid var(--primary)' }}>
@@ -672,18 +711,63 @@ export default function MockTest() {
           <p className="test-q-text">{currentQ.text}</p>
           {currentQ.imageUrl && <img src={currentQ.imageUrl} className="test-image" alt="Question Resource" />}
 
-          <div className="test-option-list">
-            {['A', 'B', 'C', 'D'].map(opt => (
-              <div 
-                key={opt}
-                className={`test-option-btn ${answers[currentQ.id] === opt ? 'selected' : ''}`}
-                onClick={() => handleSelectOption(currentQ.id, opt)}
-              >
-                <div className="option-radio-box">{opt}</div>
-                <span className="option-value-text">{currentQ.options?.[opt]}</span>
-              </div>
-            ))}
-          </div>
+          {currentQ.type === 'numerical' ? (
+            <div style={{ marginTop: '16px' }}>
+              <label className="form-label" style={{ marginBottom: '8px', display: 'block', fontWeight: 'bold', fontSize: '13px' }}>ENTER YOUR NUMERICAL ANSWER:</label>
+              <input
+                type="text"
+                className="form-input"
+                style={{ width: '100%', maxWidth: '300px', padding: '12px 16px', fontSize: '15px' }}
+                placeholder="e.g. 5.4, -2, 10"
+                value={answers[currentQ.id] || ''}
+                onChange={(e) => handleSelectOption(currentQ.id, e.target.value)}
+                disabled={isSubmitted}
+              />
+            </div>
+          ) : currentQ.type === 'multi_correct' ? (
+            <div className="test-option-list">
+              {['A', 'B', 'C', 'D'].map(opt => {
+                const selectedList = Array.isArray(answers[currentQ.id]) ? answers[currentQ.id] : (answers[currentQ.id] ? String(answers[currentQ.id]).split(',') : []);
+                const isSelected = selectedList.includes(opt);
+                
+                const handleMultiSelect = () => {
+                  let newList;
+                  if (isSelected) {
+                    newList = selectedList.filter(o => o !== opt);
+                  } else {
+                    newList = [...selectedList, opt].sort();
+                  }
+                  handleSelectOption(currentQ.id, newList);
+                };
+
+                return (
+                  <div 
+                    key={opt}
+                    className={`test-option-btn ${isSelected ? 'selected' : ''}`}
+                    onClick={handleMultiSelect}
+                  >
+                    <div className="option-radio-box" style={{ borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: '10px' }}>{isSelected ? '✓' : ''}</span>
+                    </div>
+                    <span className="option-value-text" style={{ marginLeft: '10px' }}>{opt}. {currentQ.options?.[opt]}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="test-option-list">
+              {['A', 'B', 'C', 'D'].map(opt => (
+                <div 
+                  key={opt}
+                  className={`test-option-btn ${answers[currentQ.id] === opt ? 'selected' : ''}`}
+                  onClick={() => handleSelectOption(currentQ.id, opt)}
+                >
+                  <div className="option-radio-box">{opt}</div>
+                  <span className="option-value-text">{currentQ.options?.[opt]}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
             <button 

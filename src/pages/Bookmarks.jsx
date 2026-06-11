@@ -7,6 +7,7 @@ export default function Bookmarks() {
   const navigate = useNavigate();
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFolder, setSelectedFolder] = useState('All');
   const userId = auth.currentUser?.uid;
 
   const fetchBookmarks = async () => {
@@ -84,6 +85,31 @@ export default function Bookmarks() {
         </div>
       </div>
 
+      {/* Folder Tabs */}
+      {bookmarks.length > 0 && (
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+          {['All', ...new Set(bookmarks.map(b => b.folder || 'General'))].map(folder => (
+            <button
+              key={folder}
+              onClick={() => setSelectedFolder(folder)}
+              style={{ 
+                padding: '6px 14px', 
+                fontSize: '12px', 
+                borderRadius: '20px', 
+                border: '1px solid var(--border-light)', 
+                backgroundColor: selectedFolder === folder ? 'var(--primary)' : 'var(--bg-card)', 
+                color: selectedFolder === folder ? '#ffffff' : 'var(--text-muted)',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {folder}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {bookmarks.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
@@ -92,8 +118,10 @@ export default function Bookmarks() {
             <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Bookmark questions during tests to review them here later.</p>
           </div>
         ) : (
-          bookmarks.map((bm, idx) => {
-            const q = bm.question;
+          bookmarks
+            .filter(b => selectedFolder === 'All' || (b.folder || 'General') === selectedFolder)
+            .map((bm, idx) => {
+              const q = bm.question;
             if (!q) return null;
             return (
               <div key={bm.id} className="test-question-box">
