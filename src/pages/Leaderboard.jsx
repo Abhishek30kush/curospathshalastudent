@@ -29,37 +29,63 @@ export default function Leaderboard() {
         const userScores = {};
         allTests.forEach(test => {
           const uid = test.userId;
+          if (!uid) return;
           if (!userScores[uid]) {
-            userScores[uid] = { totalScore: 0, testCount: 0, bestScore: 0 };
+            userScores[uid] = { 
+              totalScore: 0, 
+              testCount: 0, 
+              bestScore: 0, 
+              name: test.studentName || '', 
+              targetExam: test.targetExam || '',
+              email: ''
+            };
           }
           userScores[uid].totalScore += (test.score || 0);
           userScores[uid].testCount += 1;
           userScores[uid].bestScore = Math.max(userScores[uid].bestScore, test.score || 0);
+          if (test.studentName && !userScores[uid].name) {
+            userScores[uid].name = test.studentName;
+          }
+          if (test.targetExam && !userScores[uid].targetExam) {
+            userScores[uid].targetExam = test.targetExam;
+          }
         });
 
-        const userIds = Object.keys(userScores);
         const leaderData = [];
-        for (const uid of userIds) {
-          try {
-            const userDoc = await getDoc(doc(db, "users", uid));
-            if (userDoc.exists()) {
-              const data = userDoc.data();
-              const studentTarget = data.targetExam || 'IIT-JEE';
-              
-              const isMatch = (isJeeStream(targetExamVal) && isJeeStream(studentTarget)) || (targetExamVal === studentTarget);
-              
-              if (isMatch) {
-                leaderData.push({
-                  userId: uid,
-                  name: data.firstName || data.name || data.email || 'Student',
-                  email: data.email || '',
-                  ...userScores[uid],
-                  avgScore: Math.round(userScores[uid].totalScore / userScores[uid].testCount),
-                });
+        for (const uid of Object.keys(userScores)) {
+          let name = userScores[uid].name;
+          let targetExam = userScores[uid].targetExam;
+          let email = userScores[uid].email;
+
+          if (!name || !targetExam) {
+            try {
+              const userDoc = await getDoc(doc(db, "users", uid));
+              if (userDoc.exists()) {
+                const data = userDoc.data();
+                name = name || data.firstName || data.name || data.email || 'Student';
+                targetExam = targetExam || data.targetExam || 'IIT-JEE';
+                email = data.email || '';
               }
+            } catch (e) {
+              // ignore
             }
-          } catch (e) {
-            // ignore
+          }
+
+          if (!name) name = 'Student';
+          if (!targetExam) targetExam = 'IIT-JEE';
+
+          const isMatch = (isJeeStream(targetExamVal) && isJeeStream(targetExam)) || (targetExamVal === targetExam);
+
+          if (isMatch) {
+            leaderData.push({
+              userId: uid,
+              name: name,
+              email: email,
+              totalScore: userScores[uid].totalScore,
+              testCount: userScores[uid].testCount,
+              bestScore: userScores[uid].bestScore,
+              avgScore: Math.round(userScores[uid].totalScore / userScores[uid].testCount),
+            });
           }
         }
 

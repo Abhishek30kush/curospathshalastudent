@@ -82,18 +82,22 @@ export default function TestHistory() {
 
       const resolvedList = [];
       for (const sub of uniqueSubmissions) {
-        try {
-          const uDoc = await getDoc(doc(db, "users", sub.userId));
-          const name = uDoc.exists() ? (uDoc.data().name || uDoc.data().email || 'Student') : 'Student';
-          resolvedList.push({
-            ...sub,
-            studentName: name
-          });
-        } catch (e) {
-          resolvedList.push({
-            ...sub,
-            studentName: 'Student'
-          });
+        if (sub.studentName) {
+          resolvedList.push(sub);
+        } else {
+          try {
+            const uDoc = await getDoc(doc(db, "users", sub.userId));
+            const name = uDoc.exists() ? (uDoc.data().name || uDoc.data().email || 'Student') : 'Student';
+            resolvedList.push({
+              ...sub,
+              studentName: name
+            });
+          } catch (e) {
+            resolvedList.push({
+              ...sub,
+              studentName: 'Student'
+            });
+          }
         }
       }
 

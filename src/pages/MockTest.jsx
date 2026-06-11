@@ -31,6 +31,8 @@ export default function MockTest() {
   // Bookmarks
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
   const userId = auth.currentUser?.uid;
+  const [studentName, setStudentName] = useState('Student');
+  const [studentTargetExam, setStudentTargetExam] = useState('IIT-JEE');
 
   // Answers ref to prevent closure over stale state in timer submit
   const answersRef = useRef({});
@@ -66,6 +68,16 @@ export default function MockTest() {
         const qSnap = await getDocs(q);
         const qData = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setQuestions(qData);
+
+        // Fetch student profile details
+        if (userId) {
+          const uDoc = await getDoc(doc(db, "users", userId));
+          if (uDoc.exists()) {
+            const uData = uDoc.data();
+            setStudentName(uData.name || uData.firstName || uData.email || 'Student');
+            setStudentTargetExam(uData.targetExam || 'IIT-JEE');
+          }
+        }
 
         // Fetch bookmarks
         if (userId) {
@@ -207,18 +219,30 @@ export default function MockTest() {
 
       const resolvedList = [];
       for (const sub of uniqueSubmissions) {
-        try {
-          const uDoc = await getDoc(doc(db, "users", sub.userId));
-          const name = uDoc.exists() ? (uDoc.data().name || uDoc.data().email || 'Student') : 'Student';
+        let name = sub.studentName;
+        if (sub.userId === currentUid) {
+          name = studentName;
+        }
+
+        if (name) {
           resolvedList.push({
             ...sub,
             studentName: name
           });
-        } catch (e) {
-          resolvedList.push({
-            ...sub,
-            studentName: 'Student'
-          });
+        } else {
+          try {
+            const uDoc = await getDoc(doc(db, "users", sub.userId));
+            const fetchedName = uDoc.exists() ? (uDoc.data().name || uDoc.data().email || 'Student') : 'Student';
+            resolvedList.push({
+              ...sub,
+              studentName: fetchedName
+            });
+          } catch (e) {
+            resolvedList.push({
+              ...sub,
+              studentName: 'Student'
+            });
+          }
         }
       }
 
@@ -255,11 +279,17 @@ export default function MockTest() {
     }
 
     let calculatedScore = 0;
+    let maxScore = 0;
     qList.forEach(q => {
+      const qMarks = Number(q.marks) !== undefined && !isNaN(Number(q.marks)) ? Number(q.marks) : 4;
+      const rawNeg = q.negativeMarks !== undefined && !isNaN(Number(q.negativeMarks)) ? Number(q.negativeMarks) : -1;
+      const qNegMarks = rawNeg > 0 ? -rawNeg : rawNeg;
+      maxScore += qMarks;
+
       if (finalAnswers[q.id] === q.correctOption) {
-        calculatedScore += 4;
+        calculatedScore += qMarks;
       } else if (finalAnswers[q.id]) {
-        calculatedScore -= 1;
+        calculatedScore += qNegMarks;
       }
     });
     setScore(calculatedScore);
@@ -268,9 +298,11 @@ export default function MockTest() {
     try {
       await addDoc(collection(db, "userTests"), {
         userId: auth.currentUser?.uid,
+        studentName: studentName,
+        targetExam: studentTargetExam,
         testSeriesId: seriesId,
         score: calculatedScore,
-        maxScore: qList.length * 4,
+        maxScore: maxScore,
         answers: finalAnswers,
         timeTakenSeconds: timeTakenSeconds,
         submittedAt: new Date().toISOString()
@@ -293,11 +325,17 @@ export default function MockTest() {
     const currentAnswers = answersRef.current;
 
     let calculatedScore = 0;
+    let maxScore = 0;
     questions.forEach(q => {
+      const qMarks = Number(q.marks) !== undefined && !isNaN(Number(q.marks)) ? Number(q.marks) : 4;
+      const rawNeg = q.negativeMarks !== undefined && !isNaN(Number(q.negativeMarks)) ? Number(q.negativeMarks) : -1;
+      const qNegMarks = rawNeg > 0 ? -rawNeg : rawNeg;
+      maxScore += qMarks;
+
       if (currentAnswers[q.id] === q.correctOption) {
-        calculatedScore += 4;
+        calculatedScore += qMarks;
       } else if (currentAnswers[q.id]) {
-        calculatedScore -= 1;
+        calculatedScore += qNegMarks;
       }
     });
     setScore(calculatedScore);
@@ -306,9 +344,11 @@ export default function MockTest() {
     try {
       await addDoc(collection(db, "userTests"), {
         userId: auth.currentUser?.uid,
+        studentName: studentName,
+        targetExam: studentTargetExam,
         testSeriesId: seriesId,
         score: calculatedScore,
-        maxScore: questions.length * 4,
+        maxScore: maxScore,
         answers: currentAnswers,
         timeTakenSeconds: timeTakenSeconds,
         submittedAt: new Date().toISOString()
@@ -477,7 +517,8 @@ export default function MockTest() {
     const correctCount = questions.filter(q => answers[q.id] === q.correctOption).length;
     const wrongCount = questions.filter(q => answers[q.id] && answers[q.id] !== q.correctOption).length;
     const skippedCount = questions.length - correctCount - wrongCount;
-    const pct = Math.round((score / (questions.length * 4)) * 100);
+    const totalMaxScore = questions.reduce((sum, q) => sum + (Number(q.marks) || 4), 0);
+    const pct = Math.round((score / (totalMaxScore || 1)) * 100);
 
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
@@ -486,7 +527,7 @@ export default function MockTest() {
           <p className="auth-subtitle" style={{ marginBottom: '14px' }}>{title}</p>
 
           <h1 style={{ fontSize: '48px', fontWeight: '900', color: 'var(--primary)', marginBottom: '4px' }}>
-            {score} / {questions.length * 4}
+            {score} / {totalMaxScore}
           </h1>
           <p style={{ fontSize: '18px', fontWeight: '700', color: '#6366f1', marginBottom: '24px' }}>
             {pct}% Score
