@@ -90,9 +90,11 @@ export default function MaterialViewer() {
       {/* Frame Viewer or Text Viewer */}
       <div style={{ flex: 1, backgroundColor: isText ? 'var(--bg-card)' : 'var(--bg-main)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', border: '1.5px solid var(--border-light)', position: 'relative' }}>
         {isText ? (
-          <div style={{ padding: '24px', width: '100%', height: '100%', overflowY: 'auto', whiteSpace: 'pre-wrap', fontFamily: 'inherit', color: 'var(--text-main)', fontSize: '15px', lineHeight: '1.6' }}>
-            {textContent || 'No content provided.'}
-          </div>
+          <div 
+            className="note-content-rendered"
+            dangerouslySetInnerHTML={{ __html: textContent || '<p style="color: var(--text-muted); font-style: italic;">No content provided.</p>' }}
+            style={{ padding: '32px 40px', width: '100%', height: '100%', overflowY: 'auto', color: 'var(--text-main)', fontSize: '16px', lineHeight: '1.7' }}
+          />
         ) : (
           <iframe
             src={targetUrl}

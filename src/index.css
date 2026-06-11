@@ -2527,6 +2527,77 @@ a {
   }
 }
 
+/* ========================================
+   RICH TEXT NOTE READER
+   ======================================== */
+
+.note-content-rendered {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, sans-serif;
+  line-height: 1.7;
+}
+
+.note-content-rendered h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-top: 28px;
+  margin-bottom: 16px;
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 8px;
+}
+
+.note-content-rendered h2 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  color: var(--text-main);
+}
+
+.note-content-rendered p {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.note-content-rendered ul {
+  list-style-type: disc !important;
+  padding-left: 28px !important;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.note-content-rendered ol {
+  list-style-type: decimal !important;
+  padding-left: 28px !important;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.note-content-rendered li {
+  margin-bottom: 6px;
+}
+
+.note-content-rendered a {
+  color: var(--primary);
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.note-content-rendered a:hover {
+  color: var(--primary-dark);
+}
+
+.note-content-rendered blockquote {
+  border-left: 4px solid var(--primary);
+  padding-left: 16px;
+  margin: 16px 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+
 /* Extra small: <380px (small phones) */
 @media (max-width: 380px) {
   .main-content {

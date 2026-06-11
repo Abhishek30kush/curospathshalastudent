@@ -80,7 +80,15 @@ export default function ClassMaterials() {
     if (material.type === 'video') {
       window.open(material.url, '_blank');
     } else {
-      navigate('/view-material', { state: { url: material.url, title: material.title, textContent: material.textContent, type: material.type } });
+      navigate('/view-material', { 
+        state: { 
+          url: material.url, 
+          title: material.title, 
+          textContent: material.textContent, 
+          type: material.type, 
+          materialType: material.materialType 
+        } 
+      });
     }
   };
 
