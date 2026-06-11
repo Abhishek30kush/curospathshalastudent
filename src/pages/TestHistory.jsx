@@ -37,10 +37,12 @@ export default function TestHistory() {
           }
         }
 
-        const enriched = testsData.map(t => ({
-          ...t,
-          seriesName: seriesMap[t.testSeriesId] || 'Unknown Series',
-        }));
+        const enriched = testsData
+          .filter(t => t.testSeriesId === 'smart-practice' || seriesMap[t.testSeriesId])
+          .map(t => ({
+            ...t,
+            seriesName: t.testSeriesId === 'smart-practice' ? 'Smart Practice' : seriesMap[t.testSeriesId],
+          }));
 
         enriched.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
         setTests(enriched);

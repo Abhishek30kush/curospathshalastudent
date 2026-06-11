@@ -23,13 +23,20 @@ export default function Leaderboard() {
         setUserTarget(targetExamVal === 'JEE' ? 'IIT-JEE' : targetExamVal);
         const isJeeStream = (val) => val === 'JEE' || val === 'IIT-JEE';
 
-        const testsSnap = await getDocs(collection(db, "userTests"));
+        const [testsSnap, seriesSnap] = await Promise.all([
+          getDocs(collection(db, "userTests")),
+          getDocs(collection(db, "testSeries"))
+        ]);
+        const activeSeriesIds = new Set(seriesSnap.docs.filter(d => d.data().status !== 'draft').map(d => d.id));
         const allTests = testsSnap.docs.map(d => d.data());
 
         const userScores = {};
         allTests.forEach(test => {
           const uid = test.userId;
           if (!uid) return;
+          // Skip attempts for deleted or draft test series
+          if (test.testSeriesId !== 'smart-practice' && !activeSeriesIds.has(test.testSeriesId)) return;
+
           if (!userScores[uid]) {
             userScores[uid] = { 
               totalScore: 0, 
