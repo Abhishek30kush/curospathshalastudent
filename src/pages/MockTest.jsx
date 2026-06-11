@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { evaluateTest, formatTime, getScoreColor } from '../utils/testUtils';
@@ -7,6 +7,7 @@ import { evaluateTest, formatTime, getScoreColor } from '../utils/testUtils';
 export default function MockTest() {
   const { seriesId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,33 @@ export default function MockTest() {
   useEffect(() => {
     const fetchTestData = async () => {
       try {
+        if (seriesId === 'smart-practice') {
+          const stateData = location.state || {};
+          setQuestions(stateData.questions || []);
+          setTitle(stateData.title || 'Smart Practice');
+          setIsTimed(false);
+          setTimeLeft(null);
+          setLoading(false);
+          
+          // Fetch student profile details
+          if (userId) {
+            const uDoc = await getDoc(doc(db, "users", userId));
+            if (uDoc.exists()) {
+              const uData = uDoc.data();
+              setStudentName(uData.name || uData.firstName || uData.email || 'Student');
+              setStudentTargetExam(uData.targetExam || 'IIT-JEE');
+            }
+          }
+
+          // Fetch bookmarks
+          if (userId) {
+            const bmSnap = await getDocs(collection(db, `users/${userId}/bookmarks`));
+            const bmIds = new Set(bmSnap.docs.map(d => d.id));
+            setBookmarkedIds(bmIds);
+          }
+          return;
+        }
+
         // Fetch test series details
         const seriesSnap = await getDocs(query(collection(db, "testSeries")));
         const curSeries = seriesSnap.docs.find(d => d.id === seriesId);
@@ -199,6 +227,12 @@ export default function MockTest() {
   };
 
   const calculateAndFetchRankings = async (currentScore) => {
+    if (seriesId === 'smart-practice') {
+      setUserRank({ rank: 1, total: 1 });
+      setRankings([]);
+      setRankingLoading(false);
+      return;
+    }
     setRankingLoading(true);
     try {
       const q = query(collection(db, "userTests"), where("testSeriesId", "==", seriesId));
@@ -545,6 +579,16 @@ export default function MockTest() {
                       <p style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: '1.5' }}>{q.solution}</p>
                     </div>
                   )}
+
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => navigate('/ai-mentor', { state: { initialQuestion: q.text, solution: q.solution } })}
+                      style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary)', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      🤖 Ask AI Mentor
+                    </button>
+                  </div>
                 </div>
               );
             })}

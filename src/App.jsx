@@ -18,6 +18,7 @@ import AiMentor from './pages/AiMentor';
 import ClassMaterials from './pages/ClassMaterials';
 import Forum from './pages/Forum';
 import PapersBundles from './pages/PapersBundles';
+import Flashcards from './pages/Flashcards';
 
 const Sidebar = ({ theme, toggleTheme }) => {
   const handleLogout = () => {
@@ -44,6 +45,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
         </NavLink>
         <NavLink to="/leaderboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">🏆</span> Leaderboard
+        </NavLink>
+        <NavLink to="/flashcards" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <span className="nav-link-icon">🎴</span> Flashcards
         </NavLink>
         <NavLink to="/bookmarks" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">🔖</span> Bookmarks
@@ -169,6 +173,7 @@ function AppContent() {
           <Route path="/view-material" element={<MaterialViewer />} />
           <Route path="/history" element={<TestHistory />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/flashcards" element={<Flashcards />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
