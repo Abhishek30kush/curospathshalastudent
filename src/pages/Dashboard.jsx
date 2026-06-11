@@ -159,6 +159,7 @@ export default function Dashboard() {
 
   const quickActions = [
     { label: 'Study Material', icon: '📚', path: '/study-materials', bg: 'var(--qa-study-bg)', text: 'var(--qa-study-text)' },
+    { label: 'Papers & Bundles', icon: '📄', path: '/papers', bg: 'var(--qa-forum-bg)', text: 'var(--qa-forum-text)' },
     { label: 'Test History', icon: '📊', path: '/history', bg: 'var(--qa-history-bg)', text: 'var(--qa-history-text)' },
     { label: 'Leaderboard', icon: '🏆', path: '/leaderboard', bg: 'var(--qa-leaderboard-bg)', text: 'var(--qa-leaderboard-text)' },
     { label: 'Bookmarks', icon: '🔖', path: '/bookmarks', bg: 'var(--qa-bookmarks-bg)', text: 'var(--qa-bookmarks-text)' },

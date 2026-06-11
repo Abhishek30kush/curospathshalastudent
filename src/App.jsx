@@ -17,6 +17,7 @@ import Notifications from './pages/Notifications';
 import AiMentor from './pages/AiMentor';
 import ClassMaterials from './pages/ClassMaterials';
 import Forum from './pages/Forum';
+import PapersBundles from './pages/PapersBundles';
 
 const Sidebar = ({ theme, toggleTheme }) => {
   const handleLogout = () => {
@@ -34,6 +35,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
         </NavLink>
         <NavLink to="/study-materials" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">📚</span> Study Material
+        </NavLink>
+        <NavLink to="/papers" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <span className="nav-link-icon">📄</span> Papers & Bundles
         </NavLink>
         <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">📊</span> Test History
@@ -161,6 +165,7 @@ function AppContent() {
           <Route path="/test/:seriesId" element={<MockTest />} />
           <Route path="/course/:courseId" element={<Materials />} />
           <Route path="/study-materials" element={<ClassMaterials />} />
+          <Route path="/papers" element={<PapersBundles />} />
           <Route path="/view-material" element={<MaterialViewer />} />
           <Route path="/history" element={<TestHistory />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
