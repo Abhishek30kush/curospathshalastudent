@@ -9,11 +9,22 @@ export default function Login() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dob, setDob] = useState('');
+  const [dobDay, setDobDay] = useState('');
+  const [dobMonth, setDobMonth] = useState('');
+  const [dobYear, setDobYear] = useState('');
   const [phone, setPhone] = useState('');
   const [targetExam, setTargetExam] = useState('IIT-JEE');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const updateDob = (day, month, year) => {
+    if (day && month && year) {
+      setDob(`${year}-${month}-${day}`);
+    } else {
+      setDob('');
+    }
+  };
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
@@ -30,6 +41,17 @@ export default function Login() {
     if (isSignUp) {
       if (!firstName.trim() || !lastName.trim() || !dob.trim() || !phone.trim()) {
         setError('All fields are required for Sign Up');
+        return;
+      }
+
+      const today = new Date();
+      const birthDate = new Date(dob);
+      if (birthDate.toDateString() === today.toDateString()) {
+        setError("Date of Birth cannot be today's date");
+        return;
+      }
+      if (birthDate > today) {
+        setError("Date of Birth cannot be in the future");
         return;
       }
 
@@ -119,13 +141,53 @@ export default function Login() {
 
               <div className="form-group">
                 <label className="form-label">Date of Birth</label>
-                <input
-                  type="date"
-                  className="form-input"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  required
-                />
+                <div className="dob-row">
+                  <select
+                    className="dob-select"
+                    value={dobDay}
+                    onChange={(e) => {
+                      setDobDay(e.target.value);
+                      updateDob(e.target.value, dobMonth, dobYear);
+                    }}
+                    required
+                  >
+                    <option value="">Day</option>
+                    {Array.from({ length: 31 }, (_, i) => {
+                      const d = i + 1 < 10 ? `0${i + 1}` : `${i + 1}`;
+                      return <option key={d} value={d}>{i + 1}</option>;
+                    })}
+                  </select>
+                  <select
+                    className="dob-select"
+                    value={dobMonth}
+                    onChange={(e) => {
+                      setDobMonth(e.target.value);
+                      updateDob(dobDay, e.target.value, dobYear);
+                    }}
+                    required
+                  >
+                    <option value="">Month</option>
+                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, idx) => {
+                      const val = idx + 1 < 10 ? `0${idx + 1}` : `${idx + 1}`;
+                      return <option key={val} value={val}>{m}</option>;
+                    })}
+                  </select>
+                  <select
+                    className="dob-select"
+                    value={dobYear}
+                    onChange={(e) => {
+                      setDobYear(e.target.value);
+                      updateDob(dobDay, dobMonth, e.target.value);
+                    }}
+                    required
+                  >
+                    <option value="">Year</option>
+                    {Array.from({ length: 36 }, (_, i) => {
+                      const y = new Date().getFullYear() - 5 - i;
+                      return <option key={y} value={`${y}`}>{y}</option>;
+                    })}
+                  </select>
+                </div>
               </div>
 
               <div className="form-group">
@@ -186,7 +248,7 @@ export default function Login() {
             <input
               type="password"
               className="form-input"
-              placeholder="🔑 Password"
+              placeholder={isSignUp ? "🔑 Create Password" : "🔑 Password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
