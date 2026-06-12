@@ -122,7 +122,16 @@ function AppContent() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          let userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          
+          // If signup is in progress, wait for the doc to be written (up to 10 retries, 5 seconds total)
+          let retries = 0;
+          while (!userDoc.exists() && sessionStorage.getItem('signing_up') === 'true' && retries < 10) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            retries++;
+          }
+
           if (userDoc.exists()) {
             const data = userDoc.data();
             if (data.role === 'student') {

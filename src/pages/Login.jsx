@@ -67,6 +67,7 @@ export default function Login() {
 
     try {
       if (isSignUp) {
+        sessionStorage.setItem('signing_up', 'true');
         const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
         await setDoc(doc(db, "users", cred.user.uid), {
           firstName: firstName.trim(),
@@ -79,10 +80,12 @@ export default function Login() {
           role: 'student',
           createdAt: new Date().toISOString()
         });
+        sessionStorage.removeItem('signing_up');
       } else {
         await signInWithEmailAndPassword(auth, email.trim(), password);
       }
     } catch (err) {
+      sessionStorage.removeItem('signing_up');
       console.error(err);
       let friendlyMessage = err.message;
       if (

@@ -25,7 +25,20 @@ export default function Dashboard() {
   const [weakestSubject, setWeakestSubject] = useState('');
   const [weakestAccuracy, setWeakestAccuracy] = useState(null);
   const [generatingSmartTest, setGeneratingSmartTest] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
 
+  const handleShareTest = (seriesId) => {
+    const shareUrl = `${window.location.origin}/test/${seriesId}`;
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        setCopiedId(seriesId);
+        setTimeout(() => setCopiedId(null), 2000);
+      })
+      .catch(err => {
+        console.error("Failed to copy link: ", err);
+      });
+  };
+  
   const userId = auth.currentUser?.uid;
   const userEmail = auth.currentUser?.email;
 
@@ -511,9 +524,35 @@ export default function Dashboard() {
                   <span className={`test-category-badge ${(series.category === 'NEET') ? 'badge-neet' : 'badge-jee'}`}>
                     {series.category === 'JEE' ? 'IIT-JEE' : series.category}
                   </span>
-                  <span className="test-action-trigger" style={attempt ? { color: 'var(--success)' } : {}}>
-                    {attempt ? `Attempted (${attempt.score} pts) ↗` : 'Start →'}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShareTest(series.id);
+                      }}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        padding: '4px 8px',
+                        borderRadius: '6px',
+                        backgroundColor: copiedId === series.id ? 'var(--success-light)' : 'var(--border-light)',
+                        color: copiedId === series.id ? 'var(--success)' : 'var(--text-muted)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'var(--transition-smooth)'
+                      }}
+                    >
+                      {copiedId === series.id ? '✅ Copied' : '🔗 Share'}
+                    </button>
+                    <span className="test-action-trigger" style={attempt ? { color: 'var(--success)' } : {}}>
+                      {attempt ? `Attempted (${attempt.score} pts) ↗` : 'Start →'}
+                    </span>
+                  </div>
                 </div>
                 <h3 className="test-row-title">{series.title}</h3>
                 {series.description && <p className="test-row-desc">{series.description}</p>}

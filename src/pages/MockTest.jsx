@@ -23,7 +23,20 @@ export default function MockTest() {
   const [rankings, setRankings] = useState([]);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [showRankModal, setShowRankModal] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
 
+  const handleShareTest = () => {
+    const shareUrl = `${window.location.origin}/test/${seriesId}`;
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error("Failed to copy: ", err);
+      });
+  };
+  
   // Timer — isTimed: admin-defined; null means no timer
   const [isTimed, setIsTimed] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
@@ -644,6 +657,21 @@ export default function MockTest() {
           <button 
             type="button" 
             className="auth-btn" 
+            style={{ 
+              marginBottom: '12px', 
+              backgroundColor: isCopied ? 'var(--success-light)' : '#f8fafc', 
+              color: isCopied ? 'var(--success)' : 'var(--text-muted)', 
+              border: isCopied ? '1.5px solid var(--success)' : '1.5px solid var(--border-light)',
+              boxShadow: 'none'
+            }}
+            onClick={handleShareTest}
+          >
+            {isCopied ? '✅ Link Copied!' : '🔗 Share Test Link'}
+          </button>
+
+          <button 
+            type="button" 
+            className="auth-btn" 
             style={{ marginBottom: '12px', backgroundColor: '#eef2ff', color: 'var(--primary)', border: '1.5px solid var(--border-focus)' }}
             onClick={() => setShowRankModal(true)}
           >
@@ -709,8 +737,32 @@ export default function MockTest() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h1 className="section-title" style={{ maxWidth: '70%', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{title}</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '70%', overflow: 'hidden' }}>
+          <h1 className="section-title" style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', margin: 0 }}>{title}</h1>
+          <button
+            type="button"
+            onClick={handleShareTest}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: '700',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              backgroundColor: isCopied ? 'var(--success-light)' : 'var(--border-light)',
+              color: isCopied ? 'var(--success)' : 'var(--text-muted)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'var(--transition-smooth)',
+              flexShrink: 0
+            }}
+          >
+            {isCopied ? '✅ Copied' : '🔗 Share Test'}
+          </button>
+        </div>
         {isTimed && timeLeft !== null ? (
           <div style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', backgroundColor: `${getTimerColor()}15`, border: `1px solid ${getTimerColor()}` }}>
             <span style={{ fontSize: '15px', fontWeight: '900', color: getTimerColor() }}>⏱️ {formatTime(timeLeft)}</span>
