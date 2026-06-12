@@ -24,6 +24,8 @@ export default function MockTest() {
   const [rankingLoading, setRankingLoading] = useState(false);
   const [showRankModal, setShowRankModal] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [warnings, setWarnings] = useState(0);
+  const [isFullscreenEnforced, setIsFullscreenEnforced] = useState(false);
 
   const handleShareTest = () => {
     const shareUrl = `${window.location.origin}/test/${seriesId}`;
@@ -388,6 +390,83 @@ export default function MockTest() {
     }
   };
 
+  const submitRef = useRef(null);
+  useEffect(() => {
+    submitRef.current = handleSubmit;
+  }, [handleSubmit]);
+
+  // Proctoring / Cheating-Proof listeners
+  useEffect(() => {
+    if (isSubmitted || !isFullscreenEnforced) return;
+
+    // 1. Block right click
+    const handleContextMenu = (e) => e.preventDefault();
+    document.addEventListener('contextmenu', handleContextMenu);
+
+    // 2. Block copy, cut, paste
+    const preventCopyPaste = (e) => e.preventDefault();
+    document.addEventListener('copy', preventCopyPaste);
+    document.addEventListener('cut', preventCopyPaste);
+    document.addEventListener('paste', preventCopyPaste);
+
+    // 3. Block keyboard shortcuts (F12, Ctrl+Shift+I/J/C, Ctrl+U)
+    const handleKeyDown = (e) => {
+      if (
+        e.keyCode === 123 || // F12
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I/J/C
+        (e.ctrlKey && e.keyCode === 85) // Ctrl+U
+      ) {
+        e.preventDefault();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    // 4. Tab Visibility Switch Detection
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setWarnings((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            alert("Test auto-submitted due to tab switching / window inactivity.");
+            submitRef.current?.();
+          } else {
+            alert(`⚠️ Warning ${next}/3: Switching tabs or windows is not allowed! The test will be auto-submitted on the 3rd warning.`);
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // 5. Fullscreen change detection
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setWarnings((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            alert("Test auto-submitted because you exited fullscreen mode multiple times.");
+            submitRef.current?.();
+          } else {
+            alert(`⚠️ Warning ${next}/3: Exiting fullscreen is not allowed during the test! The test will be auto-submitted on the 3rd warning.`);
+            setIsFullscreenEnforced(false);
+          }
+          return next;
+        });
+      }
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('copy', preventCopyPaste);
+      document.removeEventListener('cut', preventCopyPaste);
+      document.removeEventListener('paste', preventCopyPaste);
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isSubmitted, isFullscreenEnforced]);
+
   const confirmSubmit = () => {
     const unanswered = questions.length - Object.keys(answers).length;
     const confirmText = unanswered > 0
@@ -735,8 +814,62 @@ export default function MockTest() {
   const currentQ = questions[currentIdx];
   const answeredCount = Object.keys(answers).length;
 
+  if (!isFullscreenEnforced && !isSubmitted) {
+    const enterFullscreen = () => {
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().then(() => {
+          setIsFullscreenEnforced(true);
+        }).catch(err => {
+          console.error("Fullscreen error", err);
+          setIsFullscreenEnforced(true);
+        });
+      } else {
+        setIsFullscreenEnforced(true);
+      }
+    };
+
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', backgroundColor: 'var(--bg-main)' }}>
+        <div className="auth-card" style={{ maxWidth: '560px', padding: '40px', textAlign: 'center', borderTop: '4px solid var(--primary)' }}>
+          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔒</div>
+          <h2 className="auth-title" style={{ marginBottom: '12px' }}>Secure Test Environment</h2>
+          <p className="auth-subtitle" style={{ marginBottom: '24px', lineHeight: '1.6' }}>
+            This test uses advanced proctoring to prevent cheating. To start or resume this test, you must enter fullscreen mode.
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', textAlign: 'left', backgroundColor: 'var(--primary-light)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-focus)', marginBottom: '32px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--primary-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Test Rules:</div>
+            <div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: 'var(--text-main)' }}>
+              <span>🚫</span> <span>Do not switch tabs or windows. Doing so will issue a warning.</span>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: 'var(--text-main)' }}>
+              <span>🚫</span> <span>Do not exit fullscreen mode.</span>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: 'var(--text-main)' }}>
+              <span>⚠️</span> <span>Exceeding 3 warnings will result in <strong>immediate automatic submission</strong>.</span>
+            </div>
+            {warnings > 0 && (
+              <div style={{ marginTop: '12px', padding: '8px 12px', backgroundColor: 'var(--danger-light)', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px', fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>
+                Current Warnings: {warnings} / 3
+              </div>
+            )}
+          </div>
+
+          <button 
+            type="button" 
+            className="auth-btn" 
+            onClick={enterFullscreen}
+          >
+            {warnings > 0 ? 'Resume Test in Fullscreen' : 'Start Test in Fullscreen'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '70%', overflow: 'hidden' }}>
           <h1 className="section-title" style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', margin: 0 }}>{title}</h1>
