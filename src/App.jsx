@@ -46,9 +46,6 @@ const Sidebar = ({ theme, toggleTheme }) => {
         <NavLink to="/leaderboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">🏆</span> Leaderboard
         </NavLink>
-        <NavLink to="/flashcards" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-          <span className="nav-link-icon">🎴</span> Flashcards
-        </NavLink>
         <NavLink to="/bookmarks" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">🔖</span> Bookmarks
         </NavLink>
@@ -57,6 +54,9 @@ const Sidebar = ({ theme, toggleTheme }) => {
         </NavLink>
         <NavLink to="/ai-mentor" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">🤖</span> AI Mentor
+        </NavLink>
+        <NavLink to="/flashcards" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+          <span className="nav-link-icon">🎴</span> Flashcards
         </NavLink>
         <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
           <span className="nav-link-icon">👤</span> Profile
@@ -93,6 +93,9 @@ const MobileNav = () => {
       <NavLink to="/ai-mentor" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
         <span className="mobile-nav-icon">🤖</span> AI
       </NavLink>
+      <NavLink to="/flashcards" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
+        <span className="mobile-nav-icon">🎴</span> Cards
+      </NavLink>
       <NavLink to="/profile" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
         <span className="mobile-nav-icon">👤</span> Profile
       </NavLink>
@@ -122,16 +125,7 @@ function AppContent() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         try {
-          let userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          
-          // If signup is in progress, wait for the doc to be written (up to 10 retries, 5 seconds total)
-          let retries = 0;
-          while (!userDoc.exists() && sessionStorage.getItem('signing_up') === 'true' && retries < 10) {
-            await new Promise(resolve => setTimeout(resolve, 500));
-            userDoc = await getDoc(doc(db, "users", currentUser.uid));
-            retries++;
-          }
-
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
           if (userDoc.exists()) {
             const data = userDoc.data();
             if (data.role === 'student') {
@@ -182,12 +176,12 @@ function AppContent() {
           <Route path="/view-material" element={<MaterialViewer />} />
           <Route path="/history" element={<TestHistory />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/flashcards" element={<Flashcards />} />
           <Route path="/bookmarks" element={<Bookmarks />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/forum" element={<Forum />} />
           <Route path="/ai-mentor" element={<AiMentor />} />
+          <Route path="/flashcards" element={<Flashcards />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

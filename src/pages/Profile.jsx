@@ -10,20 +10,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ firstName: '', lastName: '', dob: '', phone: '', targetExam: 'IIT-JEE' });
-  const [dobDay, setDobDay] = useState('');
-  const [dobMonth, setDobMonth] = useState('');
-  const [dobYear, setDobYear] = useState('');
   const [saving, setSaving] = useState(false);
   const [testStats, setTestStats] = useState({ total: 0, avgScore: 0, bestScore: 0 });
-  const [subjectAccuracy, setSubjectAccuracy] = useState({});
-
-  const updateDob = (day, month, year) => {
-    if (day && month && year) {
-      setForm(prev => ({ ...prev, dob: `${year}-${month}-${day}` }));
-    } else {
-      setForm(prev => ({ ...prev, dob: '' }));
-    }
-  };
 
   const userId = auth.currentUser?.uid;
   const userEmail = auth.currentUser?.email;
@@ -41,19 +29,10 @@ export default function Profile() {
           const fName = data.firstName || parts[0] || '';
           const lName = data.lastName || parts.slice(1).join(' ') || '';
 
-          const dobVal = data.dob || '';
-          if (dobVal) {
-            const parts = dobVal.split('-');
-            if (parts.length === 3) {
-              setDobYear(parts[0]);
-              setDobMonth(parts[1]);
-              setDobDay(parts[2]);
-            }
-          }
           setForm({
             firstName: fName,
             lastName: lName,
-            dob: dobVal,
+            dob: data.dob || '',
             phone: data.phone || '',
             targetExam: data.targetExam || 'IIT-JEE'
           });
@@ -71,9 +50,6 @@ export default function Profile() {
           };
           await setDoc(docRef, newProfile);
           setProfile(newProfile);
-          setDobYear('');
-          setDobMonth('');
-          setDobDay('');
           setForm({ firstName: '', lastName: '', dob: '', phone: '', targetExam: 'IIT-JEE' });
         }
 
@@ -88,28 +64,6 @@ export default function Profile() {
             avgScore: Math.round(totalScore / tests.length),
             bestScore: Math.max(...tests.map(t => t.score || 0)),
           });
-
-          // Subject Breakdown Analysis
-          const subjectScores = {};
-          tests.forEach(t => {
-            if (t.subjectBreakdown) {
-              Object.keys(t.subjectBreakdown).forEach(sub => {
-                if (!subjectScores[sub]) {
-                  subjectScores[sub] = { score: 0, max: 0 };
-                }
-                subjectScores[sub].score += t.subjectBreakdown[sub].score || 0;
-                subjectScores[sub].max += t.subjectBreakdown[sub].max || 0;
-              });
-            }
-          });
-
-          const accuracyMap = {};
-          Object.keys(subjectScores).forEach(sub => {
-            const max = subjectScores[sub].max;
-            const score = Math.max(0, subjectScores[sub].score);
-            accuracyMap[sub] = max > 0 ? Math.round((score / max) * 100) : 0;
-          });
-          setSubjectAccuracy(accuracyMap);
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -126,17 +80,6 @@ export default function Profile() {
     e.preventDefault();
     if (!form.firstName.trim() || !form.lastName.trim() || !form.dob.trim() || !form.phone.trim()) {
       alert('Please fill in all fields (First Name, Last Name, DOB, Phone)');
-      return;
-    }
-
-    const today = new Date();
-    const birthDate = new Date(form.dob);
-    if (birthDate.toDateString() === today.toDateString()) {
-      alert("Date of Birth cannot be today's date");
-      return;
-    }
-    if (birthDate > today) {
-      alert("Date of Birth cannot be in the future");
       return;
     }
 
@@ -242,29 +185,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {Object.keys(subjectAccuracy).length > 0 && (
-            <div className="test-question-box" style={{ padding: '24px', marginTop: '20px' }}>
-              <h3 style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-main)', marginBottom: '16px' }}>📊 Subject Accuracy Analysis</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {Object.keys(subjectAccuracy).map(sub => {
-                  const pct = subjectAccuracy[sub];
-                  const barColor = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
-                  return (
-                    <div key={sub}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '700', marginBottom: '6px' }}>
-                        <span style={{ color: 'var(--text-main)' }}>{sub}</span>
-                        <span style={{ color: barColor }}>{pct}%</span>
-                      </div>
-                      <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
-                        <div style={{ width: `${pct}%`, height: '100%', backgroundColor: barColor, borderRadius: '3px' }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
           <button 
             type="button" 
             className="auth-btn" 
@@ -280,24 +200,7 @@ export default function Profile() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <h2 className="section-title" style={{ fontSize: '18px' }}>Profile Details</h2>
             <button 
-              onClick={() => {
-                if (editing) {
-                  const dobVal = profile?.dob || '';
-                  if (dobVal) {
-                    const parts = dobVal.split('-');
-                    if (parts.length === 3) {
-                      setDobYear(parts[0]);
-                      setDobMonth(parts[1]);
-                      setDobDay(parts[2]);
-                    }
-                  } else {
-                    setDobYear('');
-                    setDobMonth('');
-                    setDobDay('');
-                  }
-                }
-                setEditing(!editing);
-              }}
+              onClick={() => setEditing(!editing)}
               style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 'bold', cursor: 'pointer' }}
             >
               {editing ? 'Cancel' : 'Edit Details'}
@@ -331,53 +234,13 @@ export default function Profile() {
 
               <div className="form-group">
                 <label className="form-label">Date of Birth</label>
-                <div className="dob-row">
-                  <select
-                    className="dob-select"
-                    value={dobDay}
-                    onChange={(e) => {
-                      setDobDay(e.target.value);
-                      updateDob(e.target.value, dobMonth, dobYear);
-                    }}
-                    required
-                  >
-                    <option value="">Day</option>
-                    {Array.from({ length: 31 }, (_, i) => {
-                      const d = i + 1 < 10 ? `0${i + 1}` : `${i + 1}`;
-                      return <option key={d} value={d}>{i + 1}</option>;
-                    })}
-                  </select>
-                  <select
-                    className="dob-select"
-                    value={dobMonth}
-                    onChange={(e) => {
-                      setDobMonth(e.target.value);
-                      updateDob(dobDay, e.target.value, dobYear);
-                    }}
-                    required
-                  >
-                    <option value="">Month</option>
-                    {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, idx) => {
-                      const val = idx + 1 < 10 ? `0${idx + 1}` : `${idx + 1}`;
-                      return <option key={val} value={val}>{m}</option>;
-                    })}
-                  </select>
-                  <select
-                    className="dob-select"
-                    value={dobYear}
-                    onChange={(e) => {
-                      setDobYear(e.target.value);
-                      updateDob(dobDay, dobMonth, e.target.value);
-                    }}
-                    required
-                  >
-                    <option value="">Year</option>
-                    {Array.from({ length: 36 }, (_, i) => {
-                      const y = new Date().getFullYear() - 5 - i;
-                      return <option key={y} value={`${y}`}>{y}</option>;
-                    })}
-                  </select>
-                </div>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={form.dob}
+                  onChange={(e) => setForm({ ...form, dob: e.target.value })}
+                  required
+                />
               </div>
 
               <div className="form-group">

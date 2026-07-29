@@ -37,12 +37,10 @@ export default function TestHistory() {
           }
         }
 
-        const enriched = testsData
-          .filter(t => t.testSeriesId === 'smart-practice' || seriesMap[t.testSeriesId])
-          .map(t => ({
-            ...t,
-            seriesName: t.testSeriesId === 'smart-practice' ? 'Smart Practice' : seriesMap[t.testSeriesId],
-          }));
+        const enriched = testsData.map(t => ({
+          ...t,
+          seriesName: seriesMap[t.testSeriesId] || 'Unknown Series',
+        }));
 
         enriched.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
         setTests(enriched);
@@ -84,22 +82,18 @@ export default function TestHistory() {
 
       const resolvedList = [];
       for (const sub of uniqueSubmissions) {
-        if (sub.studentName) {
-          resolvedList.push(sub);
-        } else {
-          try {
-            const uDoc = await getDoc(doc(db, "users", sub.userId));
-            const name = uDoc.exists() ? (uDoc.data().name || uDoc.data().email || 'Student') : 'Student';
-            resolvedList.push({
-              ...sub,
-              studentName: name
-            });
-          } catch (e) {
-            resolvedList.push({
-              ...sub,
-              studentName: 'Student'
-            });
-          }
+        try {
+          const uDoc = await getDoc(doc(db, "users", sub.userId));
+          const name = uDoc.exists() ? (uDoc.data().name || uDoc.data().email || 'Student') : 'Student';
+          resolvedList.push({
+            ...sub,
+            studentName: name
+          });
+        } catch (e) {
+          resolvedList.push({
+            ...sub,
+            studentName: 'Student'
+          });
         }
       }
 

@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, addDoc, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { evaluateTest, formatTime, getScoreColor } from '../utils/testUtils';
 
 export default function MockTest() {
   const { seriesId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,22 +21,7 @@ export default function MockTest() {
   const [rankings, setRankings] = useState([]);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [showRankModal, setShowRankModal] = useState(false);
-  const [isCopied, setIsCopied] = useState(false);
-  const [warnings, setWarnings] = useState(0);
-  const [isFullscreenEnforced, setIsFullscreenEnforced] = useState(false);
 
-  const handleShareTest = () => {
-    const shareUrl = `${window.location.origin}/test/${seriesId}`;
-    navigator.clipboard.writeText(shareUrl)
-      .then(() => {
-        setIsCopied(true);
-        setTimeout(() => setIsCopied(false), 2000);
-      })
-      .catch(err => {
-        console.error("Failed to copy: ", err);
-      });
-  };
-  
   // Timer — isTimed: admin-defined; null means no timer
   const [isTimed, setIsTimed] = useState(false);
   const [timeLeft, setTimeLeft] = useState(null);
@@ -48,8 +31,6 @@ export default function MockTest() {
   // Bookmarks
   const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
   const userId = auth.currentUser?.uid;
-  const [studentName, setStudentName] = useState('Student');
-  const [studentTargetExam, setStudentTargetExam] = useState('IIT-JEE');
 
   // Answers ref to prevent closure over stale state in timer submit
   const answersRef = useRef({});
@@ -60,33 +41,6 @@ export default function MockTest() {
   useEffect(() => {
     const fetchTestData = async () => {
       try {
-        if (seriesId === 'smart-practice') {
-          const stateData = location.state || {};
-          setQuestions(stateData.questions || []);
-          setTitle(stateData.title || 'Smart Practice');
-          setIsTimed(false);
-          setTimeLeft(null);
-          setLoading(false);
-          
-          // Fetch student profile details
-          if (userId) {
-            const uDoc = await getDoc(doc(db, "users", userId));
-            if (uDoc.exists()) {
-              const uData = uDoc.data();
-              setStudentName(uData.name || uData.firstName || uData.email || 'Student');
-              setStudentTargetExam(uData.targetExam || 'IIT-JEE');
-            }
-          }
-
-          // Fetch bookmarks
-          if (userId) {
-            const bmSnap = await getDocs(collection(db, `users/${userId}/bookmarks`));
-            const bmIds = new Set(bmSnap.docs.map(d => d.id));
-            setBookmarkedIds(bmIds);
-          }
-          return;
-        }
-
         // Fetch test series details
         const seriesSnap = await getDocs(query(collection(db, "testSeries")));
         const curSeries = seriesSnap.docs.find(d => d.id === seriesId);
@@ -112,16 +66,6 @@ export default function MockTest() {
         const qSnap = await getDocs(q);
         const qData = qSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setQuestions(qData);
-
-        // Fetch student profile details
-        if (userId) {
-          const uDoc = await getDoc(doc(db, "users", userId));
-          if (uDoc.exists()) {
-            const uData = uDoc.data();
-            setStudentName(uData.name || uData.firstName || uData.email || 'Student');
-            setStudentTargetExam(uData.targetExam || 'IIT-JEE');
-          }
-        }
 
         // Fetch bookmarks
         if (userId) {
@@ -242,12 +186,6 @@ export default function MockTest() {
   };
 
   const calculateAndFetchRankings = async (currentScore) => {
-    if (seriesId === 'smart-practice') {
-      setUserRank({ rank: 1, total: 1 });
-      setRankings([]);
-      setRankingLoading(false);
-      return;
-    }
     setRankingLoading(true);
     try {
       const q = query(collection(db, "userTests"), where("testSeriesId", "==", seriesId));
@@ -269,30 +207,18 @@ export default function MockTest() {
 
       const resolvedList = [];
       for (const sub of uniqueSubmissions) {
-        let name = sub.studentName;
-        if (sub.userId === currentUid) {
-          name = studentName;
-        }
-
-        if (name) {
+        try {
+          const uDoc = await getDoc(doc(db, "users", sub.userId));
+          const name = uDoc.exists() ? (uDoc.data().name || uDoc.data().email || 'Student') : 'Student';
           resolvedList.push({
             ...sub,
             studentName: name
           });
-        } else {
-          try {
-            const uDoc = await getDoc(doc(db, "users", sub.userId));
-            const fetchedName = uDoc.exists() ? (uDoc.data().name || uDoc.data().email || 'Student') : 'Student';
-            resolvedList.push({
-              ...sub,
-              studentName: fetchedName
-            });
-          } catch (e) {
-            resolvedList.push({
-              ...sub,
-              studentName: 'Student'
-            });
-          }
+        } catch (e) {
+          resolvedList.push({
+            ...sub,
+            studentName: 'Student'
+          });
         }
       }
 
@@ -328,19 +254,23 @@ export default function MockTest() {
       }
     }
 
-    const { score: calculatedScore, maxScore, subjectBreakdown } = evaluateTest(qList, finalAnswers);
+    let calculatedScore = 0;
+    qList.forEach(q => {
+      if (finalAnswers[q.id] === q.correctOption) {
+        calculatedScore += 4;
+      } else if (finalAnswers[q.id]) {
+        calculatedScore -= 1;
+      }
+    });
     setScore(calculatedScore);
     setIsSubmitted(true);
 
     try {
       await addDoc(collection(db, "userTests"), {
         userId: auth.currentUser?.uid,
-        studentName: studentName,
-        targetExam: studentTargetExam,
         testSeriesId: seriesId,
         score: calculatedScore,
-        maxScore: maxScore,
-        subjectBreakdown: subjectBreakdown,
+        maxScore: qList.length * 4,
         answers: finalAnswers,
         timeTakenSeconds: timeTakenSeconds,
         submittedAt: new Date().toISOString()
@@ -362,19 +292,23 @@ export default function MockTest() {
     const timeTakenSeconds = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
     const currentAnswers = answersRef.current;
 
-    const { score: calculatedScore, maxScore, subjectBreakdown } = evaluateTest(questions, currentAnswers);
+    let calculatedScore = 0;
+    questions.forEach(q => {
+      if (currentAnswers[q.id] === q.correctOption) {
+        calculatedScore += 4;
+      } else if (currentAnswers[q.id]) {
+        calculatedScore -= 1;
+      }
+    });
     setScore(calculatedScore);
     setIsSubmitted(true);
 
     try {
       await addDoc(collection(db, "userTests"), {
         userId: auth.currentUser?.uid,
-        studentName: studentName,
-        targetExam: studentTargetExam,
         testSeriesId: seriesId,
         score: calculatedScore,
-        maxScore: maxScore,
-        subjectBreakdown: subjectBreakdown,
+        maxScore: questions.length * 4,
         answers: currentAnswers,
         timeTakenSeconds: timeTakenSeconds,
         submittedAt: new Date().toISOString()
@@ -389,83 +323,6 @@ export default function MockTest() {
       calculateAndFetchRankings(calculatedScore);
     }
   };
-
-  const submitRef = useRef(null);
-  useEffect(() => {
-    submitRef.current = handleSubmit;
-  }, [handleSubmit]);
-
-  // Proctoring / Cheating-Proof listeners
-  useEffect(() => {
-    if (isSubmitted || !isFullscreenEnforced) return;
-
-    // 1. Block right click
-    const handleContextMenu = (e) => e.preventDefault();
-    document.addEventListener('contextmenu', handleContextMenu);
-
-    // 2. Block copy, cut, paste
-    const preventCopyPaste = (e) => e.preventDefault();
-    document.addEventListener('copy', preventCopyPaste);
-    document.addEventListener('cut', preventCopyPaste);
-    document.addEventListener('paste', preventCopyPaste);
-
-    // 3. Block keyboard shortcuts (F12, Ctrl+Shift+I/J/C, Ctrl+U)
-    const handleKeyDown = (e) => {
-      if (
-        e.keyCode === 123 || // F12
-        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) || // Ctrl+Shift+I/J/C
-        (e.ctrlKey && e.keyCode === 85) // Ctrl+U
-      ) {
-        e.preventDefault();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-
-    // 4. Tab Visibility Switch Detection
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        setWarnings((prev) => {
-          const next = prev + 1;
-          if (next >= 3) {
-            alert("Test auto-submitted due to tab switching / window inactivity.");
-            submitRef.current?.();
-          } else {
-            alert(`⚠️ Warning ${next}/3: Switching tabs or windows is not allowed! The test will be auto-submitted on the 3rd warning.`);
-          }
-          return next;
-        });
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // 5. Fullscreen change detection
-    const handleFullscreenChange = () => {
-      if (!document.fullscreenElement) {
-        setWarnings((prev) => {
-          const next = prev + 1;
-          if (next >= 3) {
-            alert("Test auto-submitted because you exited fullscreen mode multiple times.");
-            submitRef.current?.();
-          } else {
-            alert(`⚠️ Warning ${next}/3: Exiting fullscreen is not allowed during the test! The test will be auto-submitted on the 3rd warning.`);
-            setIsFullscreenEnforced(false);
-          }
-          return next;
-        });
-      }
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('copy', preventCopyPaste);
-      document.removeEventListener('cut', preventCopyPaste);
-      document.removeEventListener('paste', preventCopyPaste);
-      window.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, [isSubmitted, isFullscreenEnforced]);
 
   const confirmSubmit = () => {
     const unanswered = questions.length - Object.keys(answers).length;
@@ -488,11 +345,9 @@ export default function MockTest() {
           return next;
         });
       } else {
-        const folderName = window.prompt("Enter a folder name to categorize this bookmark (e.g. Physics Formulas, Weak Topics) or leave empty for general:", "General") || "General";
         await setDoc(bmRef, {
           questionId,
           testSeriesId: seriesId,
-          folder: folderName.trim(),
           savedAt: new Date().toISOString()
         });
         setBookmarkedIds(prev => new Set(prev).add(questionId));
@@ -568,102 +423,42 @@ export default function MockTest() {
                   <p className="test-q-text" style={{ marginBottom: '16px' }}>{q.text}</p>
                   {q.imageUrl && <img src={q.imageUrl} className="test-image" alt="Question" />}
 
-                  {q.type === 'numerical' ? (
-                    <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div className="standing-row" style={{ padding: '12px 16px', backgroundColor: String(userAns || '').trim().toLowerCase() === String(q.correctAnswer || q.correctOption).trim().toLowerCase() ? 'var(--success-light)' : 'var(--danger-light)', borderColor: String(userAns || '').trim().toLowerCase() === String(q.correctAnswer || q.correctOption).trim().toLowerCase() ? 'var(--success)' : 'var(--danger)', borderWidth: '1px', borderStyle: 'solid', borderRadius: 'var(--radius-md)' }}>
-                        <span style={{ fontWeight: 'bold' }}>Your Answer:</span>
-                        <span>{userAns || '(Skipped)'}</span>
-                      </div>
-                      <div className="standing-row" style={{ padding: '12px 16px', backgroundColor: 'var(--primary-light)', borderColor: 'var(--primary)', borderWidth: '1px', borderStyle: 'solid', borderRadius: 'var(--radius-md)' }}>
-                        <span style={{ fontWeight: 'bold', color: 'var(--primary-dark)' }}>Correct Answer:</span>
-                        <span style={{ fontWeight: 'bold', color: 'var(--primary-dark)' }}>{q.correctAnswer || q.correctOption}</span>
-                      </div>
-                    </div>
-                  ) : q.type === 'multi_correct' ? (
-                    <div className="test-option-list">
-                      {['A', 'B', 'C', 'D'].map(opt => {
-                        const parseOptions = (val) => {
-                          if (!val) return [];
-                          if (Array.isArray(val)) return val.map(v => String(v).toUpperCase());
-                          return String(val).split(',').map(v => String(v).trim().toUpperCase());
-                        };
-                        const userList = parseOptions(userAns);
-                        const correctList = parseOptions(q.correctOption);
+                  <div className="test-option-list">
+                    {['A', 'B', 'C', 'D'].map(opt => {
+                      const isCorrectOpt = q.correctOption === opt;
+                      const isUserOpt = userAns === opt;
+                      let optionBorder = 'var(--border-light)';
+                      let optionBg = 'var(--bg-main)';
+                      if (isCorrectOpt) {
+                        optionBorder = 'var(--success)';
+                        optionBg = 'var(--success-light)';
+                      } else if (isUserOpt && !isCorrectOpt) {
+                        optionBorder = 'var(--danger)';
+                        optionBg = 'var(--danger-light)';
+                      }
 
-                        const isCorrectOpt = correctList.includes(opt);
-                        const isUserOpt = userList.includes(opt);
-
-                        let optionBorder = 'var(--border-light)';
-                        let optionBg = 'var(--bg-main)';
-                        if (isCorrectOpt) {
-                          optionBorder = 'var(--success)';
-                          optionBg = 'var(--success-light)';
-                        } else if (isUserOpt && !isCorrectOpt) {
-                          optionBorder = 'var(--danger)';
-                          optionBg = 'var(--danger-light)';
-                        }
-
-                        return (
+                      return (
+                        <div 
+                          key={opt}
+                          className="test-option-btn"
+                          style={{ borderColor: optionBorder, backgroundColor: optionBg, cursor: 'default' }}
+                        >
                           <div 
-                            key={opt}
-                            className="test-option-btn"
-                            style={{ borderColor: optionBorder, backgroundColor: optionBg, cursor: 'default' }}
+                            className="option-radio-box"
+                            style={{ 
+                              backgroundColor: isCorrectOpt ? 'var(--success)' : isUserOpt ? 'var(--danger)' : 'var(--border-light)',
+                              color: '#ffffff'
+                            }}
                           >
-                            <div 
-                              className="option-radio-box"
-                              style={{ 
-                                borderRadius: '4px',
-                                backgroundColor: isCorrectOpt ? 'var(--success)' : isUserOpt ? 'var(--danger)' : 'var(--border-light)',
-                                color: '#ffffff'
-                              }}
-                            >
-                              {opt}
-                            </div>
-                            <span className="option-value-text">{q.options?.[opt]}</span>
-                            {isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--success)', fontWeight: 'bold' }}>✓ Correct</span>}
-                            {isUserOpt && !isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--danger)', fontWeight: 'bold' }}>✗ Incorrect Select</span>}
+                            {opt}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="test-option-list">
-                      {['A', 'B', 'C', 'D'].map(opt => {
-                        const isCorrectOpt = q.correctOption === opt;
-                        const isUserOpt = userAns === opt;
-                        let optionBorder = 'var(--border-light)';
-                        let optionBg = 'var(--bg-main)';
-                        if (isCorrectOpt) {
-                          optionBorder = 'var(--success)';
-                          optionBg = 'var(--success-light)';
-                        } else if (isUserOpt && !isCorrectOpt) {
-                          optionBorder = 'var(--danger)';
-                          optionBg = 'var(--danger-light)';
-                        }
-
-                        return (
-                          <div 
-                            key={opt}
-                            className="test-option-btn"
-                            style={{ borderColor: optionBorder, backgroundColor: optionBg, cursor: 'default' }}
-                          >
-                            <div 
-                              className="option-radio-box"
-                              style={{ 
-                                backgroundColor: isCorrectOpt ? 'var(--success)' : isUserOpt ? 'var(--danger)' : 'var(--border-light)',
-                                color: '#ffffff'
-                              }}
-                            >
-                              {opt}
-                            </div>
-                            <span className="option-value-text">{q.options?.[opt]}</span>
-                            {isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--success)', fontWeight: 'bold' }}>✓</span>}
-                            {isUserOpt && !isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--danger)', fontWeight: 'bold' }}>✗</span>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                          <span className="option-value-text">{q.options?.[opt]}</span>
+                          {isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--success)', fontWeight: 'bold' }}>✓</span>}
+                          {isUserOpt && !isCorrectOpt && <span style={{ marginLeft: 'auto', color: 'var(--danger)', fontWeight: 'bold' }}>✗</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
 
                   {!!q.solution && (
                     <div style={{ marginTop: '20px', backgroundColor: 'var(--primary-light)', padding: '16px', borderRadius: 'var(--radius-md)', borderLeft: '4px solid var(--primary)' }}>
@@ -671,16 +466,6 @@ export default function MockTest() {
                       <p style={{ fontSize: '14px', color: 'var(--text-main)', lineHeight: '1.5' }}>{q.solution}</p>
                     </div>
                   )}
-
-                  <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
-                    <button 
-                      type="button" 
-                      onClick={() => navigate('/ai-mentor', { state: { initialQuestion: q.text, solution: q.solution } })}
-                      style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: 'var(--primary)', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      🤖 Ask AI Mentor
-                    </button>
-                  </div>
                 </div>
               );
             })}
@@ -692,8 +477,7 @@ export default function MockTest() {
     const correctCount = questions.filter(q => answers[q.id] === q.correctOption).length;
     const wrongCount = questions.filter(q => answers[q.id] && answers[q.id] !== q.correctOption).length;
     const skippedCount = questions.length - correctCount - wrongCount;
-    const totalMaxScore = questions.reduce((sum, q) => sum + (Number(q.marks) || 4), 0);
-    const pct = Math.round((score / (totalMaxScore || 1)) * 100);
+    const pct = Math.round((score / (questions.length * 4)) * 100);
 
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
@@ -702,7 +486,7 @@ export default function MockTest() {
           <p className="auth-subtitle" style={{ marginBottom: '14px' }}>{title}</p>
 
           <h1 style={{ fontSize: '48px', fontWeight: '900', color: 'var(--primary)', marginBottom: '4px' }}>
-            {score} / {totalMaxScore}
+            {score} / {questions.length * 4}
           </h1>
           <p style={{ fontSize: '18px', fontWeight: '700', color: '#6366f1', marginBottom: '24px' }}>
             {pct}% Score
@@ -732,21 +516,6 @@ export default function MockTest() {
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>Skipped</div>
             </div>
           </div>
-
-          <button 
-            type="button" 
-            className="auth-btn" 
-            style={{ 
-              marginBottom: '12px', 
-              backgroundColor: isCopied ? 'var(--success-light)' : '#f8fafc', 
-              color: isCopied ? 'var(--success)' : 'var(--text-muted)', 
-              border: isCopied ? '1.5px solid var(--success)' : '1.5px solid var(--border-light)',
-              boxShadow: 'none'
-            }}
-            onClick={handleShareTest}
-          >
-            {isCopied ? '✅ Link Copied!' : '🔗 Share Test Link'}
-          </button>
 
           <button 
             type="button" 
@@ -814,88 +583,10 @@ export default function MockTest() {
   const currentQ = questions[currentIdx];
   const answeredCount = Object.keys(answers).length;
 
-  if (!isFullscreenEnforced && !isSubmitted) {
-    const enterFullscreen = () => {
-      const docEl = document.documentElement;
-      if (docEl.requestFullscreen) {
-        docEl.requestFullscreen().then(() => {
-          setIsFullscreenEnforced(true);
-        }).catch(err => {
-          console.error("Fullscreen error", err);
-          setIsFullscreenEnforced(true);
-        });
-      } else {
-        setIsFullscreenEnforced(true);
-      }
-    };
-
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh', backgroundColor: 'var(--bg-main)' }}>
-        <div className="auth-card" style={{ maxWidth: '560px', padding: '40px', textAlign: 'center', borderTop: '4px solid var(--primary)' }}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>🔒</div>
-          <h2 className="auth-title" style={{ marginBottom: '12px' }}>Secure Test Environment</h2>
-          <p className="auth-subtitle" style={{ marginBottom: '24px', lineHeight: '1.6' }}>
-            This test uses advanced proctoring to prevent cheating. To start or resume this test, you must enter fullscreen mode.
-          </p>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', textAlign: 'left', backgroundColor: 'var(--primary-light)', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-focus)', marginBottom: '32px' }}>
-            <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--primary-dark)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Test Rules:</div>
-            <div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: 'var(--text-main)' }}>
-              <span>🚫</span> <span>Do not switch tabs or windows. Doing so will issue a warning.</span>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: 'var(--text-main)' }}>
-              <span>🚫</span> <span>Do not exit fullscreen mode.</span>
-            </div>
-            <div style={{ display: 'flex', gap: '10px', fontSize: '14px', color: 'var(--text-main)' }}>
-              <span>⚠️</span> <span>Exceeding 3 warnings will result in <strong>immediate automatic submission</strong>.</span>
-            </div>
-            {warnings > 0 && (
-              <div style={{ marginTop: '12px', padding: '8px 12px', backgroundColor: 'var(--danger-light)', border: '1px solid var(--danger)', color: 'var(--danger)', borderRadius: '6px', fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>
-                Current Warnings: {warnings} / 3
-              </div>
-            )}
-          </div>
-
-          <button 
-            type="button" 
-            className="auth-btn" 
-            onClick={enterFullscreen}
-          >
-            {warnings > 0 ? 'Resume Test in Fullscreen' : 'Start Test in Fullscreen'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '70%', overflow: 'hidden' }}>
-          <h1 className="section-title" style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', margin: 0 }}>{title}</h1>
-          <button
-            type="button"
-            onClick={handleShareTest}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: '700',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              backgroundColor: isCopied ? 'var(--success-light)' : 'var(--border-light)',
-              color: isCopied ? 'var(--success)' : 'var(--text-muted)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              transition: 'var(--transition-smooth)',
-              flexShrink: 0
-            }}
-          >
-            {isCopied ? '✅ Copied' : '🔗 Share Test'}
-          </button>
-        </div>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <h1 className="section-title" style={{ maxWidth: '70%', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{title}</h1>
         {isTimed && timeLeft !== null ? (
           <div style={{ padding: '8px 16px', borderRadius: 'var(--radius-md)', backgroundColor: `${getTimerColor()}15`, border: `1px solid ${getTimerColor()}` }}>
             <span style={{ fontSize: '15px', fontWeight: '900', color: getTimerColor() }}>⏱️ {formatTime(timeLeft)}</span>
@@ -940,63 +631,18 @@ export default function MockTest() {
           <p className="test-q-text">{currentQ.text}</p>
           {currentQ.imageUrl && <img src={currentQ.imageUrl} className="test-image" alt="Question Resource" />}
 
-          {currentQ.type === 'numerical' ? (
-            <div style={{ marginTop: '16px' }}>
-              <label className="form-label" style={{ marginBottom: '8px', display: 'block', fontWeight: 'bold', fontSize: '13px' }}>ENTER YOUR NUMERICAL ANSWER:</label>
-              <input
-                type="text"
-                className="form-input"
-                style={{ width: '100%', maxWidth: '300px', padding: '12px 16px', fontSize: '15px' }}
-                placeholder="e.g. 5.4, -2, 10"
-                value={answers[currentQ.id] || ''}
-                onChange={(e) => handleSelectOption(currentQ.id, e.target.value)}
-                disabled={isSubmitted}
-              />
-            </div>
-          ) : currentQ.type === 'multi_correct' ? (
-            <div className="test-option-list">
-              {['A', 'B', 'C', 'D'].map(opt => {
-                const selectedList = Array.isArray(answers[currentQ.id]) ? answers[currentQ.id] : (answers[currentQ.id] ? String(answers[currentQ.id]).split(',') : []);
-                const isSelected = selectedList.includes(opt);
-                
-                const handleMultiSelect = () => {
-                  let newList;
-                  if (isSelected) {
-                    newList = selectedList.filter(o => o !== opt);
-                  } else {
-                    newList = [...selectedList, opt].sort();
-                  }
-                  handleSelectOption(currentQ.id, newList);
-                };
-
-                return (
-                  <div 
-                    key={opt}
-                    className={`test-option-btn ${isSelected ? 'selected' : ''}`}
-                    onClick={handleMultiSelect}
-                  >
-                    <div className="option-radio-box" style={{ borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: '10px' }}>{isSelected ? '✓' : ''}</span>
-                    </div>
-                    <span className="option-value-text" style={{ marginLeft: '10px' }}>{opt}. {currentQ.options?.[opt]}</span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="test-option-list">
-              {['A', 'B', 'C', 'D'].map(opt => (
-                <div 
-                  key={opt}
-                  className={`test-option-btn ${answers[currentQ.id] === opt ? 'selected' : ''}`}
-                  onClick={() => handleSelectOption(currentQ.id, opt)}
-                >
-                  <div className="option-radio-box">{opt}</div>
-                  <span className="option-value-text">{currentQ.options?.[opt]}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="test-option-list">
+            {['A', 'B', 'C', 'D'].map(opt => (
+              <div 
+                key={opt}
+                className={`test-option-btn ${answers[currentQ.id] === opt ? 'selected' : ''}`}
+                onClick={() => handleSelectOption(currentQ.id, opt)}
+              >
+                <div className="option-radio-box">{opt}</div>
+                <span className="option-value-text">{currentQ.options?.[opt]}</span>
+              </div>
+            ))}
+          </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
             <button 
