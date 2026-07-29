@@ -77,14 +77,11 @@ export default function MockTest() {
         // Check for existing attempt
         let alreadySubmitted = false;
         if (userId) {
-          const attemptQuery = query(
-            collection(db, "userTests"),
-            where("userId", "==", userId),
-            where("testSeriesId", "==", seriesId)
-          );
+          const attemptQuery = query(collection(db, "userTests"), where("userId", "==", userId));
           const attemptSnap = await getDocs(attemptQuery);
-          if (!attemptSnap.empty) {
-            const attemptDoc = attemptSnap.docs[0].data();
+          const existingDoc = attemptSnap.docs.find(d => d.data().testSeriesId === seriesId);
+          if (existingDoc) {
+            const attemptDoc = existingDoc.data();
             setAnswers(attemptDoc.answers || {});
             setScore(attemptDoc.score || 0);
             setIsSubmitted(true);
@@ -266,7 +263,7 @@ export default function MockTest() {
     setIsSubmitted(true);
 
     try {
-      await addDoc(collection(db, "userTests"), {
+      await setDoc(doc(db, "userTests", `${auth.currentUser?.uid}_${seriesId}`), {
         userId: auth.currentUser?.uid,
         testSeriesId: seriesId,
         score: calculatedScore,
@@ -304,7 +301,7 @@ export default function MockTest() {
     setIsSubmitted(true);
 
     try {
-      await addDoc(collection(db, "userTests"), {
+      await setDoc(doc(db, "userTests", `${auth.currentUser?.uid}_${seriesId}`), {
         userId: auth.currentUser?.uid,
         testSeriesId: seriesId,
         score: calculatedScore,
