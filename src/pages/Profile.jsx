@@ -257,30 +257,22 @@ export default function Profile() {
 
               <div className="form-group">
                 <label className="form-label">Target Class / Stream</label>
-                <div className="target-grid">
-                  <div 
-                    className={`target-option ${form.targetExam === 'IIT-JEE' ? 'active' : ''}`}
-                    onClick={() => setForm({ ...form, targetExam: 'IIT-JEE' })}
-                  >
-                    IIT-JEE
-                  </div>
-                  <div 
-                    className={`target-option ${form.targetExam === 'NEET' ? 'active' : ''}`}
-                    onClick={() => setForm({ ...form, targetExam: 'NEET' })}
-                  >
-                    NEET
-                  </div>
-                </div>
-                <div className="target-grid target-grid-4">
-                  {['Class 9', 'Class 10', 'Class 11', 'Class 12'].map(cls => (
-                    <div 
-                      key={cls}
-                      className={`target-option ${form.targetExam === cls ? 'active' : ''}`}
-                      onClick={() => setForm({ ...form, targetExam: cls })}
-                    >
-                      {cls}
-                    </div>
-                  ))}
+                <div style={{
+                  padding: '12px 16px',
+                  backgroundColor: 'var(--bg-main)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1.5px solid var(--border-light)',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  color: 'var(--text-main)',
+                  display: 'flex',
+                  justify: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span>{form.targetExam === 'JEE' ? 'IIT-JEE' : (form.targetExam || 'IIT-JEE')}</span>
+                  <span style={{ fontSize: '11px', color: '#d97706', backgroundColor: '#fffbeb', padding: '4px 8px', borderRadius: '6px', border: '1px solid #fde68a', fontWeight: '700' }}>
+                    🔒 Contact Admin to change batch
+                  </span>
                 </div>
               </div>
 
