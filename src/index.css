@@ -2640,3 +2640,170 @@ a {
   }
 }
 
+/* ==========================================================================
+   FLASHCARDS 3D FLIP CARD STYLING
+   ========================================================================== */
+.flashcards-layout {
+  padding-bottom: 40px;
+}
+
+.flashcard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.flashcard-scene {
+  height: 250px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flashcard-scene.is-flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1.5px solid var(--border-light);
+  background-color: var(--bg-card);
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-smooth);
+  box-sizing: border-box;
+}
+
+.flashcard-scene:hover .flashcard-face {
+  box-shadow: var(--shadow-xl);
+  border-color: var(--border-focus);
+  transform: translateY(-2px);
+}
+
+.flashcard-scene.is-flipped:hover .flashcard-face-back {
+  transform: rotateY(180deg) translateY(-2px);
+}
+
+.flashcard-face-front {
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--primary-light) 100%);
+}
+
+.flashcard-face-back {
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-main) 100%);
+  transform: rotateY(180deg);
+}
+
+.flashcard-subject-tag {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.flashcard-subject-tag.physics {
+  background-color: var(--course-physics-bg);
+  color: var(--course-physics-text);
+}
+
+.flashcard-subject-tag.chemistry {
+  background-color: var(--course-chemistry-bg);
+  color: var(--course-chemistry-text);
+}
+
+.flashcard-subject-tag.maths,
+.flashcard-subject-tag.math {
+  background-color: var(--course-math-bg);
+  color: var(--course-math-text);
+}
+
+.flashcard-subject-tag.biology {
+  background-color: var(--course-biology-bg);
+  color: var(--course-biology-text);
+}
+
+.flashcard-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.3;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.flashcard-content {
+  font-size: 16px;
+  font-weight: 700;
+  font-family: 'Courier New', Courier, monospace;
+  color: var(--primary);
+  background: var(--primary-glow);
+  padding: 16px;
+  border-radius: var(--radius-md);
+  border: 1.5px dashed var(--primary);
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  margin: 12px 0;
+}
+
+.flashcard-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.flashcard-rating-btn {
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-light);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.flashcard-rating-btn.easy:hover {
+  background-color: var(--success-light);
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.flashcard-rating-btn.medium:hover {
+  background-color: var(--warning-light);
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.flashcard-rating-btn.hard:hover {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+
