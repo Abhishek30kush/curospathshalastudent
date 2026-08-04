@@ -54,20 +54,22 @@ export default function MaterialViewer() {
     return link;
   };
 
-  const isVideo = type === 'video' || materialType === 'Video Lecture' || url.includes('youtube.com') || url.includes('youtu.be');
+  const isVideo = type === 'video' || materialType === 'Video Lecture' || (url && (url.includes('youtube.com') || url.includes('youtu.be')));
+  const isPdf = !isText && !isVideo;
+  
   let targetUrl = url;
-
-  if (isVideo) {
+  if (isVideo && url) {
     targetUrl = getYouTubeEmbedUrl(url);
-  } else if (!isText) {
-    // PDF Google Docs viewer wrapper to prevent direct download on web
-    targetUrl = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}`;
   }
+
+  const [useGoogleDocs, setUseGoogleDocs] = React.useState(false);
+
+  const finalPdfUrl = useGoogleDocs && url ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(url)}` : url;
 
   return (
     <div style={{ userSelect: 'none', WebkitUserSelect: 'none', msUserSelect: 'none', height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}>
       {/* Secure Toolbar Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-card)', padding: '16px 20px', borderBottom: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-card)', padding: '14px 20px', borderBottom: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <button 
             onClick={() => navigate(-1)} 
@@ -76,14 +78,56 @@ export default function MaterialViewer() {
             &larr; Back
           </button>
           <div>
-            <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)' }}>{title || 'Study Resource'}</h2>
-            <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '2px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', margin: 0 }}>{title || 'Study Resource'}</h2>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginTop: '2px', margin: 0 }}>
               🔒 Protected View • {isVideo ? 'Secure Video Player' : isText ? 'Direct Note Reader' : 'Secure Document Reader'}
             </p>
           </div>
         </div>
-        <div className="secure-tag">
-          <span>🛡️ Copy Protected</span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {isPdf && url && (
+            <>
+              <button
+                onClick={() => setUseGoogleDocs(!useGoogleDocs)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-light)',
+                  backgroundColor: 'var(--bg-main)',
+                  color: 'var(--text-muted)',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                {useGoogleDocs ? '⚡ Standard Viewer' : '🌐 Google Preview'}
+              </button>
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--primary)',
+                  color: '#ffffff',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  boxShadow: '0 2px 8px rgba(79, 70, 229, 0.2)'
+                }}
+              >
+                📄 Open / Download PDF ↗
+              </a>
+            </>
+          )}
+          <div className="secure-tag">
+            <span>🛡️ Copy Protected</span>
+          </div>
         </div>
       </div>
 
@@ -95,6 +139,22 @@ export default function MaterialViewer() {
             dangerouslySetInnerHTML={{ __html: textContent || '<p style="color: var(--text-muted); font-style: italic;">No content provided.</p>' }}
             style={{ padding: '32px 40px', width: '100%', height: '100%', overflowY: 'auto', color: 'var(--text-main)', fontSize: '16px', lineHeight: '1.7' }}
           />
+        ) : isPdf ? (
+          <object
+            data={finalPdfUrl}
+            type="application/pdf"
+            width="100%"
+            height="100%"
+            style={{ width: '100%', height: '100%', border: 'none' }}
+          >
+            <iframe
+              src={finalPdfUrl}
+              className="viewer-frame"
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              title={title}
+              allowFullScreen
+            />
+          </object>
         ) : (
           <iframe
             src={targetUrl}
