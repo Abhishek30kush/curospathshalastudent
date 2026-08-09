@@ -87,64 +87,86 @@ export default function Materials() {
           </div>
         ) : (
           Object.entries(groupMaterialsByChapter(materials)).sort(([a], [b]) => a.localeCompare(b)).map(([chapter, mats]) => (
-            <div key={chapter} style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden' }}>
+            <div key={chapter} style={{ border: '1px solid var(--border-light)', borderRadius: '14px', overflow: 'hidden', marginBottom: '12px', background: 'var(--card-bg)' }}>
               <button 
                 onClick={() => toggleChapter(chapter)}
                 style={{ 
                   width: '100%', 
                   background: 'var(--card-bg)', 
                   border: 'none', 
-                  padding: '16px 20px', 
+                  padding: '14px 16px', 
                   display: 'flex', 
                   justifyContent: 'space-between', 
                   alignItems: 'center',
+                  gap: '12px',
                   cursor: 'pointer',
-                  borderBottom: expandedChapters[chapter] ? '1px solid var(--border-color)' : 'none'
+                  textAlign: 'left',
+                  borderBottom: expandedChapters[chapter] ? '1px solid var(--border-light)' : 'none'
                 }}
               >
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-main)' }}>{chapter}</h2>
-                <span style={{ fontSize: '18px', color: 'var(--text-muted)', transition: 'transform 0.2s', transform: expandedChapters[chapter] ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: '18px', shrink: 0 }}>📂</span>
+                  <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: 'var(--text-main)', textAlign: 'left', wordBreak: 'break-word', flex: 1, minWidth: 0 }}>{chapter}</h2>
+                </div>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', transition: 'transform 0.2s', transform: expandedChapters[chapter] ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink: 0 }}>
                   ▼
                 </span>
               </button>
               
               {expandedChapters[chapter] && (
-                <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px', backgroundColor: 'var(--bg-main)' }}>
+                <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: 'var(--bg-main)' }}>
                   {mats.map(material => (
                     <div 
                       key={material.id} 
-                      className="standing-row"
-                      style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--card-bg)', border: '1px solid var(--border-color)' }}
+                      style={{ 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between',
+                        gap: '12px', 
+                        padding: '12px 14px',
+                        background: 'var(--card-bg)', 
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '10px'
+                      }}
                       onClick={() => openMaterial(material)}
                     >
-                      <div 
-                        className="quick-icon-wrapper" 
-                        style={{ 
-                          margin: 0, 
-                          backgroundColor: material.type === 'video' ? 'var(--danger-light)' : 'var(--primary-light)', 
-                          color: material.type === 'video' ? 'var(--danger)' : 'var(--primary)' 
-                        }}
-                      >
-                        <span>{material.type === 'video' ? '▶' : '📄'}</span>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap' }}>
-                          <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-main)', margin: 0 }}>
-                            {material.title}
-                          </h3>
-                          {material.lectureName && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                        <div 
+                          style={{ 
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            fontSize: '16px',
+                            backgroundColor: material.type === 'video' ? 'var(--danger-light)' : 'var(--primary-light)', 
+                            color: material.type === 'video' ? 'var(--danger)' : 'var(--primary)' 
+                          }}
+                        >
+                          <span>{material.type === 'video' ? '▶' : '📄'}</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '2px' }}>
+                            <h3 style={{ fontSize: '15px', fontWeight: '700', color: 'var(--text-main)', margin: 0, wordBreak: 'break-word' }}>
+                              {material.title}
+                            </h3>
+                            {material.lectureName && (
                               <span style={{ fontSize: '10px', background: 'var(--bg-main)', color: 'var(--text-muted)', border: '1px solid var(--border-light)', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
-                                  {material.lectureName}
+                                {material.lectureName}
                               </span>
+                            )}
+                          </div>
+                          {material.description && (
+                            <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {material.description}
+                            </p>
                           )}
                         </div>
-                        {material.description && (
-                          <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                            {material.description}
-                          </p>
-                        )}
                       </div>
-                      <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '13px' }}>View &rarr;</span>
+                      <span style={{ color: 'var(--primary)', fontWeight: 'bold', fontSize: '13px', flexShrink: 0, whiteSpace: 'nowrap' }}>View &rarr;</span>
                     </div>
                   ))}
                 </div>
