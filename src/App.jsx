@@ -20,45 +20,54 @@ import Forum from './pages/Forum';
 import PapersBundles from './pages/PapersBundles';
 import Flashcards from './pages/Flashcards';
 
-const Sidebar = ({ theme, toggleTheme }) => {
+const Sidebar = ({ theme, toggleTheme, onClose }) => {
   const handleLogout = () => {
     signOut(auth);
   };
 
   return (
-    <div className="sidebar">
-      <div className="sidebar-logo">
-        <span>🎓</span> Curos Scholar
+    <div className="sidebar flex flex-col h-full">
+      <div className="sidebar-logo flex items-center justify-between">
+        <div><span>🎓</span> Curos Scholar</div>
+        {onClose && (
+          <button 
+            onClick={onClose} 
+            className="mobile-drawer-close-btn"
+            aria-label="Close Menu"
+          >
+            ✕
+          </button>
+        )}
       </div>
       <nav className="sidebar-nav">
-        <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">🏠</span> Dashboard
         </NavLink>
-        <NavLink to="/study-materials" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/study-materials" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">📚</span> Study Material
         </NavLink>
-        <NavLink to="/papers" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/papers" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">📄</span> Papers & Bundles
         </NavLink>
-        <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/history" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">📊</span> Test History
         </NavLink>
-        <NavLink to="/leaderboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/leaderboard" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">🏆</span> Leaderboard
         </NavLink>
-        <NavLink to="/bookmarks" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/bookmarks" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">🔖</span> Bookmarks
         </NavLink>
-        <NavLink to="/forum" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/forum" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">💬</span> Doubt Forum
         </NavLink>
-        <NavLink to="/ai-mentor" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/ai-mentor" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">🤖</span> AI Mentor
         </NavLink>
-        <NavLink to="/flashcards" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/flashcards" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">🎴</span> Flashcards
         </NavLink>
-        <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+        <NavLink to="/profile" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`} onClick={onClose}>
           <span className="nav-link-icon">👤</span> Profile
         </NavLink>
         <button 
@@ -78,7 +87,7 @@ const Sidebar = ({ theme, toggleTheme }) => {
   );
 };
 
-const MobileNav = () => {
+const MobileNav = ({ onOpenMenu }) => {
   return (
     <div className="mobile-nav">
       <NavLink to="/" end className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
@@ -87,18 +96,15 @@ const MobileNav = () => {
       <NavLink to="/study-materials" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
         <span className="mobile-nav-icon">📚</span> Study
       </NavLink>
+      <NavLink to="/papers" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
+        <span className="mobile-nav-icon">📄</span> Papers
+      </NavLink>
       <NavLink to="/history" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
         <span className="mobile-nav-icon">📊</span> History
       </NavLink>
-      <NavLink to="/ai-mentor" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
-        <span className="mobile-nav-icon">🤖</span> AI
-      </NavLink>
-      <NavLink to="/flashcards" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
-        <span className="mobile-nav-icon">🎴</span> Cards
-      </NavLink>
-      <NavLink to="/profile" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`}>
-        <span className="mobile-nav-icon">👤</span> Profile
-      </NavLink>
+      <button onClick={onOpenMenu} className="mobile-nav-link" style={{ border: 'none', background: 'none' }}>
+        <span className="mobile-nav-icon">☰</span> Menu
+      </button>
     </div>
   );
 };
@@ -107,6 +113,7 @@ function AppContent() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -165,7 +172,33 @@ function AppContent() {
 
   return (
     <div className="app-container">
+      {/* Mobile Top Header Bar */}
+      <header className="mobile-top-header">
+        <div className="mobile-top-logo">
+          <span>🎓</span> Curos Scholar
+        </div>
+        <div className="mobile-top-actions">
+          <button onClick={toggleTheme} className="mobile-top-icon-btn" title="Toggle Theme">
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <button onClick={() => setMobileMenuOpen(true)} className="mobile-top-icon-btn" title="Open Menu">
+            ☰
+          </button>
+        </div>
+      </header>
+
+      {/* Desktop Sidebar */}
       <Sidebar theme={theme} toggleTheme={toggleTheme} />
+
+      {/* Mobile Slide-out Drawer */}
+      {mobileMenuOpen && (
+        <div className="mobile-drawer-backdrop" onClick={() => setMobileMenuOpen(false)}>
+          <div className="mobile-drawer-content" onClick={(e) => e.stopPropagation()}>
+            <Sidebar theme={theme} toggleTheme={toggleTheme} onClose={() => setMobileMenuOpen(false)} />
+          </div>
+        </div>
+      )}
+
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -185,7 +218,7 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <MobileNav />
+      <MobileNav onOpenMenu={() => setMobileMenuOpen(true)} />
     </div>
   );
 }
